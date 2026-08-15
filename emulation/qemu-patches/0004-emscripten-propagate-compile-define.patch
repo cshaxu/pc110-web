@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] meson: configure Emscripten browser module API
+
+QEMU's Emscripten machine file is loaded after the generated cross file and
+therefore replaces its built-in compiler arguments. Preserve the explicit
+EMSCRIPTEN define so QEMU selects its existing WASM host compatibility paths
+throughout the project, not merely during configure probes. Admit the narrow
+incoming Module API required by the Web bridge: arguments, pre-run setup,
+Canvas, artifact location, and status/output callbacks. Run QEMU on an
+Emscripten proxy pthread so the browser event loop remains interactive. Keep
+the display canvas on the browser thread and use Emscripten's offscreen
+framebuffer bridge instead of transferring the canvas to the QEMU worker.
+
+Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
+Verification: inspect the qemu-system-i386.js compile command for
+-DEMSCRIPTEN.
+
+---
+ configs/meson/emscripten.txt | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/configs/meson/emscripten.txt b/configs/meson/emscripten.txt
+index 726f36c..c49f122 100644
+--- a/configs/meson/emscripten.txt
++++ b/configs/meson/emscripten.txt
+@@ -1,8 +1,7 @@
+ [built-in options]
+-c_args = ['-pthread']
+-cpp_args = ['-pthread']
+-objc_args = ['-pthread']
++c_args = ['-pthread', '-DEMSCRIPTEN']
++cpp_args = ['-pthread', '-DEMSCRIPTEN']
++objc_args = ['-pthread', '-DEMSCRIPTEN']
+-# -sPROXY_TO_PTHREAD link time flag always requires -pthread even during
+-# configuration so explicitly add the flag here.
++# QEMU uses pthreads, so explicitly retain the flag during configuration.
+-c_link_args = ['-pthread','-sASYNCIFY=1','-sPROXY_TO_PTHREAD=1','-sFORCE_FILESYSTEM','-sALLOW_TABLE_GROWTH','-sTOTAL_MEMORY=2GB','-sWASM_BIGINT','-sEXPORT_ES6=1','-sASYNCIFY_IMPORTS=ffi_call_js','-sEXPORTED_RUNTIME_METHODS=addFunction,removeFunction,TTY,FS']
++c_link_args = ['-pthread','-sASYNCIFY=1','-sPROXY_TO_PTHREAD=1','-sENVIRONMENT=web','-sFORCE_FILESYSTEM','-sALLOW_TABLE_GROWTH','-sINITIAL_MEMORY=536870912','-sWASM_BIGINT','-sEXPORT_ES6=1','-sASYNCIFY_IMPORTS=ffi_call_js','-sEXPORTED_RUNTIME_METHODS=addFunction,removeFunction,TTY,FS,HEAPU8','-sINCOMING_MODULE_JS_API=arguments,preRun,canvas,locateFile,setStatus,print,printErr,onAbort,onExit']
+-cpp_link_args = ['-pthread','-sASYNCIFY=1','-sPROXY_TO_PTHREAD=1','-sFORCE_FILESYSTEM','-sALLOW_TABLE_GROWTH','-sTOTAL_MEMORY=2GB','-sWASM_BIGINT','-sEXPORT_ES6=1','-sASYNCIFY_IMPORTS=ffi_call_js','-sEXPORTED_RUNTIME_METHODS=addFunction,removeFunction,TTY,FS']
++cpp_link_args = ['-pthread','-sASYNCIFY=1','-sPROXY_TO_PTHREAD=1','-sENVIRONMENT=web','-sFORCE_FILESYSTEM','-sALLOW_TABLE_GROWTH','-sINITIAL_MEMORY=536870912','-sWASM_BIGINT','-sEXPORT_ES6=1','-sASYNCIFY_IMPORTS=ffi_call_js','-sEXPORTED_RUNTIME_METHODS=addFunction,removeFunction,TTY,FS,HEAPU8','-sINCOMING_MODULE_JS_API=arguments,preRun,canvas,locateFile,setStatus,print,printErr,onAbort,onExit']

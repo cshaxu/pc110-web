@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] meson: skip install-tree symlinks on restricted Windows hosts
+
+The post-configuration install-tree staging script creates symbolic links.
+That staging tree is not consumed by an Emscripten browser artifact, and
+Windows requires Developer Mode or Administrator privilege to create those
+links. Skip the staging-only postconf action for Emscripten and native Windows
+hosts while leaving normal host behavior unchanged.
+
+Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
+Verification: configure i386-softmmu with the Web Git Bash adapters and
+confirm that build.ninja is generated for both Emscripten and native Windows.
+
+---
+ meson.build | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index f490a647f2..60d182c836 100644
+--- a/meson.build
++++ b/meson.build
+@@ -15,7 +15,9 @@ add_test_setup('thorough',
+ add_test_setup('thorough',
+                env: ['G_TEST_SLOW=1', 'SPEED=thorough', 'RUST_BACKTRACE=1'])
+ 
+-meson.add_postconf_script(find_program('scripts/symlink-install-tree.py'))
++if not ['emscripten', 'windows'].contains(host_machine.system())
++  meson.add_postconf_script(find_program('scripts/symlink-install-tree.py'))
++endif
+ 
+ ####################
+ # Global variables #

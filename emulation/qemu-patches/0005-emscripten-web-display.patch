@@ -1,0 +1,322 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] ui: add an Emscripten canvas display backend
+
+The browser build cannot use QEMU's native SDL frontend directly: the QEMU
+event loop belongs on a worker while the page owns the HTML canvas. Add a
+small, software-surface display backend for the Emscripten build. It proxies
+pixel presentation to the Emscripten runtime thread, where the Web bridge
+copies the QEMU surface to the page canvas.
+
+This backend deliberately has no GL scanout support. The PC110 target uses
+the standard VGA software surface.
+
+Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
+
+---
+ qapi/ui.json    |  1 +
+ ui/meson.build  |  1 +
+ ui/web-display.c | 263 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 268 insertions(+)
+
+diff --git a/qapi/ui.json b/qapi/ui.json
+index 5a9cf44..62ffd96 100644
+--- a/qapi/ui.json
++++ b/qapi/ui.json
+@@ -1515,5 +1515,8 @@
+ # @dbus: Start a D-Bus service for the display.  (Since 7.0)
+ #
++# @web: Present a software display surface through the browser canvas
++# bridge.  Available only in the Emscripten build.
++#
+ # Since: 2.12
+ ##
+ { 'enum'    : 'DisplayType',
+@@ -1525,6 +1528,7 @@
+     { 'name': 'egl-headless', 'if': 'CONFIG_OPENGL' },
+     { 'name': 'curses', 'if': 'CONFIG_CURSES' },
+     { 'name': 'cocoa', 'if': 'CONFIG_COCOA' },
++    { 'name': 'web' },
+     { 'name': 'spice-app', 'if': 'CONFIG_SPICE' },
+     { 'name': 'dbus', 'if': 'CONFIG_DBUS_DISPLAY' }
+   ]
+diff --git a/ui/meson.build b/ui/meson.build
+index 5ed4f05..2b4de5e 100644
+--- a/ui/meson.build
++++ b/ui/meson.build
+@@ -18,6 +18,7 @@ system_ss.add(files(
+   'ui-qmp-cmds.c',
+   'util.c',
+ ))
++system_ss.add(files('web-display.c'))
+ system_ss.add(when: pixman, if_true: files('console-vc.c'), if_false: files('console-vc-stubs.c'))
+ if dbus_display
+   system_ss.add(files('dbus-module.c'))
+diff --git a/ui/web-display.c b/ui/web-display.c
+new file mode 100644
+index 0000000..f36a12e
+--- /dev/null
++++ b/ui/web-display.c
+@@ -0,0 +1,263 @@
++/*
++ * QEMU browser canvas display backend.
++ *
++ * The QEMU machine runs on the Emscripten proxy pthread.  The page canvas
++ * remains on the browser runtime thread, so surface presentation is proxied
++ * to a Web bridge callback there.
++ */
++
++#include "qemu/osdep.h"
++#include "qemu/module.h"
++#include "ui/console.h"
++#include "ui/input.h"
++
++#include <emscripten/em_asm.h>
++#include <emscripten/html5.h>
++
++static pthread_t web_display_thread;
++static int web_display_last_x;
++static int web_display_last_y;
++static bool web_display_have_pointer;
++
++static QKeyCode web_display_qcode(const char *code)
++{
++#define WEB_QCODE(name, qcode) \
++    if (strcmp(code, name) == 0) { \
++        return qcode; \
++    }
++    WEB_QCODE("KeyA", Q_KEY_CODE_A)
++    WEB_QCODE("KeyB", Q_KEY_CODE_B)
++    WEB_QCODE("KeyC", Q_KEY_CODE_C)
++    WEB_QCODE("KeyD", Q_KEY_CODE_D)
++    WEB_QCODE("KeyE", Q_KEY_CODE_E)
++    WEB_QCODE("KeyF", Q_KEY_CODE_F)
++    WEB_QCODE("KeyG", Q_KEY_CODE_G)
++    WEB_QCODE("KeyH", Q_KEY_CODE_H)
++    WEB_QCODE("KeyI", Q_KEY_CODE_I)
++    WEB_QCODE("KeyJ", Q_KEY_CODE_J)
++    WEB_QCODE("KeyK", Q_KEY_CODE_K)
++    WEB_QCODE("KeyL", Q_KEY_CODE_L)
++    WEB_QCODE("KeyM", Q_KEY_CODE_M)
++    WEB_QCODE("KeyN", Q_KEY_CODE_N)
++    WEB_QCODE("KeyO", Q_KEY_CODE_O)
++    WEB_QCODE("KeyP", Q_KEY_CODE_P)
++    WEB_QCODE("KeyQ", Q_KEY_CODE_Q)
++    WEB_QCODE("KeyR", Q_KEY_CODE_R)
++    WEB_QCODE("KeyS", Q_KEY_CODE_S)
++    WEB_QCODE("KeyT", Q_KEY_CODE_T)
++    WEB_QCODE("KeyU", Q_KEY_CODE_U)
++    WEB_QCODE("KeyV", Q_KEY_CODE_V)
++    WEB_QCODE("KeyW", Q_KEY_CODE_W)
++    WEB_QCODE("KeyX", Q_KEY_CODE_X)
++    WEB_QCODE("KeyY", Q_KEY_CODE_Y)
++    WEB_QCODE("KeyZ", Q_KEY_CODE_Z)
++    WEB_QCODE("Digit0", Q_KEY_CODE_0)
++    WEB_QCODE("Digit1", Q_KEY_CODE_1)
++    WEB_QCODE("Digit2", Q_KEY_CODE_2)
++    WEB_QCODE("Digit3", Q_KEY_CODE_3)
++    WEB_QCODE("Digit4", Q_KEY_CODE_4)
++    WEB_QCODE("Digit5", Q_KEY_CODE_5)
++    WEB_QCODE("Digit6", Q_KEY_CODE_6)
++    WEB_QCODE("Digit7", Q_KEY_CODE_7)
++    WEB_QCODE("Digit8", Q_KEY_CODE_8)
++    WEB_QCODE("Digit9", Q_KEY_CODE_9)
++    WEB_QCODE("Escape", Q_KEY_CODE_ESC)
++    WEB_QCODE("Backspace", Q_KEY_CODE_BACKSPACE)
++    WEB_QCODE("Tab", Q_KEY_CODE_TAB)
++    WEB_QCODE("Enter", Q_KEY_CODE_RET)
++    WEB_QCODE("Space", Q_KEY_CODE_SPC)
++    WEB_QCODE("Minus", Q_KEY_CODE_MINUS)
++    WEB_QCODE("Equal", Q_KEY_CODE_EQUAL)
++    WEB_QCODE("BracketLeft", Q_KEY_CODE_BRACKET_LEFT)
++    WEB_QCODE("BracketRight", Q_KEY_CODE_BRACKET_RIGHT)
++    WEB_QCODE("Backslash", Q_KEY_CODE_BACKSLASH)
++    WEB_QCODE("Semicolon", Q_KEY_CODE_SEMICOLON)
++    WEB_QCODE("Quote", Q_KEY_CODE_APOSTROPHE)
++    WEB_QCODE("Backquote", Q_KEY_CODE_GRAVE_ACCENT)
++    WEB_QCODE("Comma", Q_KEY_CODE_COMMA)
++    WEB_QCODE("Period", Q_KEY_CODE_DOT)
++    WEB_QCODE("Slash", Q_KEY_CODE_SLASH)
++    WEB_QCODE("ShiftLeft", Q_KEY_CODE_SHIFT)
++    WEB_QCODE("ShiftRight", Q_KEY_CODE_SHIFT_R)
++    WEB_QCODE("ControlLeft", Q_KEY_CODE_CTRL)
++    WEB_QCODE("ControlRight", Q_KEY_CODE_CTRL_R)
++    WEB_QCODE("AltLeft", Q_KEY_CODE_ALT)
++    WEB_QCODE("AltRight", Q_KEY_CODE_ALT_R)
++    WEB_QCODE("MetaLeft", Q_KEY_CODE_META_L)
++    WEB_QCODE("MetaRight", Q_KEY_CODE_META_R)
++    WEB_QCODE("CapsLock", Q_KEY_CODE_CAPS_LOCK)
++    WEB_QCODE("F1", Q_KEY_CODE_F1)
++    WEB_QCODE("F2", Q_KEY_CODE_F2)
++    WEB_QCODE("F3", Q_KEY_CODE_F3)
++    WEB_QCODE("F4", Q_KEY_CODE_F4)
++    WEB_QCODE("F5", Q_KEY_CODE_F5)
++    WEB_QCODE("F6", Q_KEY_CODE_F6)
++    WEB_QCODE("F7", Q_KEY_CODE_F7)
++    WEB_QCODE("F8", Q_KEY_CODE_F8)
++    WEB_QCODE("F9", Q_KEY_CODE_F9)
++    WEB_QCODE("F10", Q_KEY_CODE_F10)
++    WEB_QCODE("F11", Q_KEY_CODE_F11)
++    WEB_QCODE("F12", Q_KEY_CODE_F12)
++    WEB_QCODE("PrintScreen", Q_KEY_CODE_PRINT)
++    WEB_QCODE("ScrollLock", Q_KEY_CODE_SCROLL_LOCK)
++    WEB_QCODE("Pause", Q_KEY_CODE_PAUSE)
++    WEB_QCODE("Insert", Q_KEY_CODE_INSERT)
++    WEB_QCODE("Delete", Q_KEY_CODE_DELETE)
++    WEB_QCODE("Home", Q_KEY_CODE_HOME)
++    WEB_QCODE("End", Q_KEY_CODE_END)
++    WEB_QCODE("PageUp", Q_KEY_CODE_PGUP)
++    WEB_QCODE("PageDown", Q_KEY_CODE_PGDN)
++    WEB_QCODE("ArrowLeft", Q_KEY_CODE_LEFT)
++    WEB_QCODE("ArrowUp", Q_KEY_CODE_UP)
++    WEB_QCODE("ArrowDown", Q_KEY_CODE_DOWN)
++    WEB_QCODE("ArrowRight", Q_KEY_CODE_RIGHT)
++#undef WEB_QCODE
++    return Q_KEY_CODE_UNMAPPED;
++}
++
++static EM_BOOL web_display_key(int event_type,
++                               const EmscriptenKeyboardEvent *event,
++                               void *opaque)
++{
++    QKeyCode qcode = web_display_qcode(event->code);
++
++    if (qcode == Q_KEY_CODE_UNMAPPED) {
++        return false;
++    }
++
++    qemu_input_event_send_key_qcode(opaque, qcode,
++                                    event_type == EMSCRIPTEN_EVENT_KEYDOWN);
++    return true;
++}
++
++static EM_BOOL web_display_mouse(int event_type,
++                                 const EmscriptenMouseEvent *event,
++                                 void *opaque)
++{
++    QemuConsole *con = opaque;
++    int width = qemu_console_get_width(con, 0);
++    int height = qemu_console_get_height(con, 0);
++    int x = event->targetX;
++    int y = event->targetY;
++
++    if (x < 0 || y < 0 || x >= width || y >= height) {
++        return false;
++    }
++    if (qemu_input_is_absolute(con)) {
++        qemu_input_queue_abs(con, INPUT_AXIS_X, x, 0, width);
++        qemu_input_queue_abs(con, INPUT_AXIS_Y, y, 0, height);
++    } else if (web_display_have_pointer) {
++        qemu_input_queue_rel(con, INPUT_AXIS_X, x - web_display_last_x);
++        qemu_input_queue_rel(con, INPUT_AXIS_Y, y - web_display_last_y);
++    }
++    web_display_last_x = x;
++    web_display_last_y = y;
++    web_display_have_pointer = true;
++
++    if (event_type == EMSCRIPTEN_EVENT_MOUSEDOWN ||
++        event_type == EMSCRIPTEN_EVENT_MOUSEUP) {
++        InputButton button;
++        if (event->button == 0) {
++            button = INPUT_BUTTON_LEFT;
++        } else if (event->button == 1) {
++            button = INPUT_BUTTON_MIDDLE;
++        } else if (event->button == 2) {
++            button = INPUT_BUTTON_RIGHT;
++        } else {
++            return false;
++        }
++        qemu_input_queue_btn(con, button, event_type == EMSCRIPTEN_EVENT_MOUSEDOWN);
++    }
++    qemu_input_event_sync();
++    return true;
++}
++
++static void web_display_present(DisplaySurface *surface)
++{
++    if (!surface) {
++        return;
++    }
++
++    EM_ASM({
++        Module.printErr?.("pc110-web-frame:" + $0 + ":" + $1 + ":" + $2 + ":" + $3);
++    }, surface_data(surface), surface_width(surface), surface_height(surface),
++       surface_stride(surface));
++}
++
++static void web_display_update(DisplayChangeListener *dcl,
++                               int x, int y, int w, int h)
++{
++    web_display_present(qemu_console_surface(dcl->con));
++}
++
++static void web_display_refresh(DisplayChangeListener *dcl)
++{
++    graphic_hw_update(dcl->con);
++}
++
++static void web_display_switch(DisplayChangeListener *dcl,
++                               DisplaySurface *surface)
++{
++    fprintf(stderr, "pc110-web-display: surface %dx%d\n",
++            surface_width(surface), surface_height(surface));
++    web_display_present(surface);
++}
++
++static bool web_display_check_format(DisplayChangeListener *dcl,
++                                     pixman_format_code_t format)
++{
++    return format == PIXMAN_x8r8g8b8 || format == PIXMAN_a8r8g8b8;
++}
++
++static const DisplayChangeListenerOps web_display_ops = {
++    .dpy_name = "web",
++    .dpy_gfx_update = web_display_update,
++    .dpy_gfx_switch = web_display_switch,
++    .dpy_gfx_check_format = web_display_check_format,
++    .dpy_refresh = web_display_refresh,
++};
++
++static void web_display_init(DisplayState *ds, DisplayOptions *opts)
++{
++    DisplayChangeListener *dcl = g_new0(DisplayChangeListener, 1);
++
++    web_display_thread = pthread_self();
++    dcl->con = qemu_console_lookup_default();
++    dcl->ops = &web_display_ops;
++    register_displaychangelistener(dcl);
++    EMSCRIPTEN_RESULT keydown = emscripten_set_keydown_callback_on_thread(
++        EMSCRIPTEN_EVENT_TARGET_WINDOW, dcl->con, true, web_display_key,
++        web_display_thread);
++    EMSCRIPTEN_RESULT keyup = emscripten_set_keyup_callback_on_thread(
++        EMSCRIPTEN_EVENT_TARGET_WINDOW, dcl->con, true, web_display_key,
++        web_display_thread);
++    EMSCRIPTEN_RESULT mousemove = emscripten_set_mousemove_callback_on_thread(
++        "#display", dcl->con, true, web_display_mouse, web_display_thread);
++    EMSCRIPTEN_RESULT mousedown = emscripten_set_mousedown_callback_on_thread(
++        "#display", dcl->con, true, web_display_mouse, web_display_thread);
++    EMSCRIPTEN_RESULT mouseup = emscripten_set_mouseup_callback_on_thread(
++        "#display", dcl->con, true, web_display_mouse, web_display_thread);
++    if (keydown != EMSCRIPTEN_RESULT_SUCCESS || keyup != EMSCRIPTEN_RESULT_SUCCESS ||
++        mousemove != EMSCRIPTEN_RESULT_SUCCESS || mousedown != EMSCRIPTEN_RESULT_SUCCESS ||
++        mouseup != EMSCRIPTEN_RESULT_SUCCESS) {
++        fprintf(stderr, "pc110-web-input: registration failed (%d, %d, %d, %d, %d)\n",
++                keydown, keyup, mousemove, mousedown, mouseup);
++    }
++    fprintf(stderr, "pc110-web-display: initialized\n");
++}
++
++static QemuDisplay qemu_display_web = {
++    .type = DISPLAY_TYPE_WEB,
++    .init = web_display_init,
++};
++
++static void register_web_display(void)
++{
++    setenv("PC110POST", "1", 1);
++    setenv("PC110POSTUI", "1", 1);
++    setenv("PC110SETUPIMG", "/pc110-input/easysetup.bin", 1);
++    setenv("PC110BOOT", "/pc110-input/Personaware-disk.img", 1);
++    qemu_display_register(&qemu_display_web);
++}
++
++type_init(register_web_display);

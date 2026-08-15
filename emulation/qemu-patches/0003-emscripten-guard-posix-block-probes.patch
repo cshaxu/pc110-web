@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] block: guard POSIX-only probes for Emscripten
+
+Regular files in Emscripten's virtual filesystem do not support block-device
+ioctl probes. Return ENOTSUP for the optional logical-block-size probe. The
+fixed QEMU baseline already avoids internal linkage for the legacy
+`EMSCRIPTEN` macro; extend that guard to the compiler-provided spelling.
+
+Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
+Verification: compile block/file-posix.c in qemu-system-i386.js.
+
+---
+ block/file-posix.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/block/file-posix.c b/block/file-posix.c
+index e49b13d..81c6ec7 100644
+--- a/block/file-posix.c
++++ b/block/file-posix.c
+@@ -313,6 +313,9 @@ static int raw_normalize_devicepath(const char **filename, Error **errp)
+  */
+ static int probe_logical_blocksize(int fd, unsigned int *sector_size_p)
+ {
++#ifdef __EMSCRIPTEN__
++    return -ENOTSUP;
++#else
+     unsigned int sector_size;
+     bool success = false;
+     int i;
+@@ -339,6 +342,7 @@ static int probe_logical_blocksize(int fd, unsigned int *sector_size_p)
+     }
+ 
+     return success ? 0 : -errno;
++#endif
+ }
+ 
+ /**
+@@ -2100,7 +2104,7 @@ static int handle_aiocb_write_zeroes_unmap(void *opaque)
+ }
+ 
+ #ifndef HAVE_COPY_FILE_RANGE
+-#ifndef EMSCRIPTEN
++#if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
+ static
+ #endif
+ ssize_t copy_file_range(int in_fd, off_t *in_off, int out_fd,
+                         off_t *out_off, size_t len, unsigned int flags)
+ {

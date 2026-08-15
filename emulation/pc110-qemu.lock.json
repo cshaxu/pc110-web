@@ -1,0 +1,5 @@
+{
+  "repository": "https://github.com/cshaxu/pc110-qemu.git",
+  "revision": "bae390e",
+  "purpose": "PC110 device sources and replayable core patch series consumed by the WebAssembly preparation scripts."
+}

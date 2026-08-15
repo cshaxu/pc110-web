@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] cacheflush: recognize Emscripten's predefined macro
+
+Emscripten defines __EMSCRIPTEN__, but QEMU 11.0.2's cache-flush no-op path
+checks only the project-supplied EMSCRIPTEN macro. The configured extra C
+flag is not propagated to all Meson target compilation commands, causing
+the generic clear-cache implementation to reach LLVM's unsupported wasm
+llvm.clear_cache intrinsic. Accept the compiler-provided macro in both the
+declaration and implementation guards.
+
+Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
+Verification: build qemu-system-i386.js with the Web Git Bash adapter.
+
+---
+ include/qemu/cacheflush.h | 2 +-
+ util/cacheflush.c         | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/qemu/cacheflush.h b/include/qemu/cacheflush.h
+index 8c64b87..3854488 100644
+--- a/include/qemu/cacheflush.h
++++ b/include/qemu/cacheflush.h
+@@ -26,7 +26,7 @@ static inline void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
+     /* icache is coherent and does not require flushing. */
+ }
+ 
+-#elif defined(EMSCRIPTEN)
++#elif defined(EMSCRIPTEN) || defined(__EMSCRIPTEN__)
+ 
+ static inline void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
+ {
+diff --git a/util/cacheflush.c b/util/cacheflush.c
+index c043c5f..8a6e5e1 100644
+--- a/util/cacheflush.c
++++ b/util/cacheflush.c
+@@ -227,7 +227,7 @@ static void __attribute__((constructor)) init_cache_info(void)
+ 
+ /* Caches are coherent and do not require flushing; symbol inline. */
+ 
+-#elif defined(EMSCRIPTEN)
++#elif defined(EMSCRIPTEN) || defined(__EMSCRIPTEN__)
+ 
+ /* Wasm doesn't have executable region of memory. */
+ 

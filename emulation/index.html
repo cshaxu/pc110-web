@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PC110-QEMU Web</title>
+    <link rel="stylesheet" href="./src/ui/app.css">
+  </head>
+  <body>
+    <main class="application">
+      <header>
+        <h1>PC110-QEMU Web</h1>
+        <p>Choose your locally held PC110 media, then start the browser-local emulator.</p>
+      </header>
+      <section class="controls" aria-label="PC110 media">
+        <label>PC110 BIOS <input id="bios" type="file" required><span id="bios-state" class="file-state">No file selected</span></label>
+        <label>PC110 font ROM <input id="font-rom" type="file" required><span id="font-rom-state" class="file-state">No file selected</span></label>
+        <label>Personaware disk image <input id="disk" type="file" required><span id="disk-state" class="file-state">No file selected</span></label>
+        <button id="start" type="button" disabled>Start PC110</button>
+        <button id="restart" type="button" disabled>Restart</button>
+      </section>
+      <p id="status" role="status">Select all three files to begin.</p>
+      <section id="display-shell" class="display-shell" aria-label="PC110 display">
+        <div class="display-toolbar">
+          <span>Click the display before using keyboard or pointer input.</span>
+          <button id="fullscreen" type="button" aria-label="Enter full screen">Full screen</button>
+        </div>
+        <div class="display-viewport">
+          <canvas id="display" width="720" height="400" tabindex="0">PC110 display canvas</canvas>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./dist/src/ui/app.js"></script>
+  </body>
+</html>

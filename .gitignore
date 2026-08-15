@@ -1,0 +1,7 @@
+# Future Next.js application
+frontend/node_modules/
+frontend/.next/
+
+# Local editor and operating-system files
+.DS_Store
+Thumbs.db

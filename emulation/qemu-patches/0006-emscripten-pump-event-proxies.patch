@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] main-loop: service browser event callbacks on the QEMU worker
+
+With `PROXY_TO_PTHREAD`, Emscripten delivers DOM event callbacks to the QEMU
+worker through its system proxy queue. QEMU's continuously running main loop
+must poll that queue, otherwise a successful callback registration accepts
+browser keys but never executes their QEMU-side handler.
+
+Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
+
+---
+ util/main-loop.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/util/main-loop.c b/util/main-loop.c
+index 10dd2bf..0000000 100644
+--- a/util/main-loop.c
++++ b/util/main-loop.c
+@@ -35,5 +35,9 @@
+ #include "qom/object.h"
+ 
++#ifdef __EMSCRIPTEN__
++#include <emscripten/proxying.h>
++#endif
++
+ #ifndef _WIN32
+ #include <sys/wait.h>
+ #endif
+@@ -572,6 +576,10 @@ void main_loop_wait(int nonblocking)
+     int ret;
+     int64_t timeout_ns;
+ 
++#ifdef __EMSCRIPTEN__
++    emscripten_proxy_execute_queue(emscripten_proxy_get_system_queue());
++#endif
++
+     if (nonblocking) {
+         mlpoll.timeout = 0;
+     }

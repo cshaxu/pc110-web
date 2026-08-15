@@ -7,5 +7,6 @@
 | Verified | M2 T1 S2 P1 browser session contract | `history/M2-T1-S2-P1-browser-session-contract.md` | TypeScript type-check and lifecycle contract test |
 | Verified | M2 T2 S1 P1 display-capable Emscripten runtime | `history/M2-T2-S1-P1-display-capable-emscripten-runtime.md` | Browser display and PC110 INT19 evidence |
 | Verified | M3 T2 S1 P1 clean Windows WASM build | `history/M3-T2-S1-P1-clean-windows-wasm-build.md` | Fresh dependency sysroot, full QEMU artifact, checksums, contracts, and browser boot |
+| Closed | M0 Td S8 P1 integrated repository layout | `history/M0-Td-S8-P1-integrated-repository-layout.md` | Root governance and integrated target layout are current |
 
 Candidates are unnumbered. They must not begin implementation or occupy `CURRENT.md`.

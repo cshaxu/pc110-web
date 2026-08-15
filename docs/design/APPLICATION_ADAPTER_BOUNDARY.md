@@ -2,21 +2,22 @@
 
 ## Decision
 
-PC110 Web has a one-way product dependency:
+PC110 Web has a one-way dependency inside one integrated product:
 
 ```text
-frontend/ (Next.js product application)
+src/app/ (Next.js product application)
   -> versioned emulator runtime contract
-     -> emulation/ (QEMU build, browser adapter, runtime verification)
+     -> src/emulator/ (browser adapter and runtime verification)
+        -> qemu/patches/ and scripts/qemu-build/ (local build inputs)
         -> locked PC110-QEMU source and QEMU baseline
 ```
 
-`frontend/` owns routes, product copy, responsive layout, accessibility,
+`src/app/` owns routes, product copy, responsive layout, accessibility,
 media-selection UX, deployment configuration, and privacy-safe observability.
-`emulation/` owns the locked source dependency, QEMU patch replay, Emscripten
-toolchain, generated runtime bundle, machine command construction,
-browser-to-QEMU bridge, display/input/audio adaptation, lifecycle semantics,
-and low-level runtime tests.
+`src/emulator/` owns machine command construction, browser-to-QEMU bridge,
+display/input/audio adaptation, lifecycle semantics, and low-level runtime
+tests. `qemu/patches/`, `scripts/qemu-build/`, and the root lock file own the
+replayable local toolchain boundary and source provenance.
 
 The frontend must not import QEMU source, QEMU patches, build scripts, or
 Emscripten-generated modules directly. The emulator adapter must not depend on
@@ -25,24 +26,19 @@ Next.js routing, React state, visual design, analytics, or deployment SDKs.
 ## Target structure
 
 ```text
-frontend/
-  app/                         # Next.js routes and page composition
-  features/player/             # Product-level player controls and state
-  adapters/emulator-runtime/   # Frontend implementation of the public client
-  public/runtime/              # Immutable CI-produced runtime bundle
-  tests/                       # Application and cross-boundary acceptance
-
-emulation/
-  bridge/                      # Emscripten module factory and browser bridge
-  src/session/                 # Machine lifecycle and launch-file contract
-  src/runtime/                 # Versioned public runtime contract (future)
-  src/ui/                      # Temporary standalone diagnostic harness
-  scripts/                     # Reproducible build, package, and local serve
-  qemu-patches/                # Replayable Web-only QEMU patch series
-  docs/                        # Emulator architecture, MTSP, and evidence
+src/app/                        # Next.js routes, components, and player host
+src/emulator/bridge/            # Emscripten module factory and browser bridge
+src/emulator/session/           # Machine lifecycle and launch-file contract
+src/emulator/runtime/           # Versioned public runtime contract
+src/emulator/harness/           # Temporary standalone diagnostic harness
+qemu/patches/                   # Replayable Web-only QEMU patch series
+scripts/qemu-build/             # Reproducible local build and package scripts
+tests/{app,emulator,qemu}/      # Corresponding acceptance and unit tests
+public/emulator/                # Immutable published runtime bundle
+public/pc110/                   # Intentionally deployed firmware and disks
 ```
 
-The current standalone `src/ui/` page remains an integration harness until a
+The current standalone UI remains an integration harness until an application
 frontend client replaces it. It is not the permanent public product surface.
 
 ## Runtime contract
@@ -72,18 +68,18 @@ event codes and safe messages.
 
 ## Deployment boundary
 
-The deployment package contains only frontend assets and a generated public
-runtime bundle. Firmware, font ROMs, disk images, Easy-Setup payloads, local
-verification media, build caches, and source checkouts are excluded. Runtime
-files are same-origin or explicitly compatible-origin resources with WASM MIME
-type and cross-origin-isolation headers. The frontend may release independently
-when its declared manifest compatibility range permits it.
+The deployment package contains the application, a generated public runtime
+bundle under `public/emulator/`, and intentionally selected PC110 media under
+`public/pc110/`. Runtime files are same-origin or explicitly compatible-origin
+resources with WASM MIME type and cross-origin-isolation headers. Build caches
+and source checkouts are excluded. Deployed PC110 media are public at their
+deployment URLs and are loaded on demand rather than universally preloaded.
 
 ## Migration sequence
 
 1. **M3 T3 — Runtime contract extraction:** extract manifest schema, artifact
    URL policy, lifecycle events, and adapter-facing errors from the harness.
-2. **M3 T4 — Frontend player host:** create the Next.js shell and implement
+2. **M3 T4 — Application player host:** create the Next.js shell and implement
    `Pc110RuntimeClient` without changing machine boot semantics.
 3. **M3 T5 — Dual-surface acceptance:** prove harness and frontend boot the
    same manifest to the same PC110 POST/INT19 checkpoint.
@@ -98,5 +94,5 @@ when its declared manifest compatibility range permits it.
 - The runtime contract is versioned before frontend implementation begins.
 - Private PC110 media remains browser-local.
 - Both surfaces share acceptance checkpoints rather than divergent boot paths.
-- Each implementation commit remains scope-pure: `emulation/`, `frontend/`,
-  or repository-root release/governance files.
+- Each implementation commit remains scope-pure according to the repository
+  execution rules.

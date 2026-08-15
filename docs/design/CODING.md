@@ -1,6 +1,7 @@
-# Source Layout
+# Source Layout (Historical Transition)
 
-This is the target layout. M0 creates tracked empty ownership directories and Web-specific ignore rules, but does not create runtime code, a package manifest, build configuration, or a QEMU checkout.
+This document records the pre-integrated layout. The current target is
+`REPOSITORY_LAYOUT.md`; no new code may use the paths below as a destination.
 
 ```text
 web/
@@ -15,6 +16,9 @@ web/
   tests/                    # Browser and bridge regression tests
 ```
 
-`qemu/` is the existing native PC110 QEMU change set, not a Web-code destination. Web-specific QEMU modifications first live in `web/qemu-patches/`; editing a pre-existing root path requires an independent rationale, upstream-merge review, and a scope-exception entry.
+`qemu/` is a build-input boundary, not a browser-runtime source destination.
+Web-specific QEMU modifications live in `qemu/patches/`; editing any locked or
+upstream-related path requires an independent rationale, upstream-merge review,
+and a scope-exception entry.
 
 Each initial `.gitkeep` file is a directory-retention marker only. Replacing one with implementation requires a separately approved implementation Task.

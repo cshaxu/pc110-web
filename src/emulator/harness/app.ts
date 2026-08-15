@@ -199,6 +199,18 @@ document.addEventListener("fullscreenchange", () => {
 });
 canvas.addEventListener("click", () => {
   canvas.focus();
+  try {
+    canvas.requestPointerLock?.();
+  } catch {
+    report("Pointer capture is unavailable in this browser.");
+  }
+});
+document.addEventListener("keydown", event => {
+  if (event.code === "ShiftRight" && document.pointerLockElement === canvas) {
+    document.exitPointerLock();
+    canvas.blur();
+    report("Keyboard and pointer capture released.");
+  }
 });
 report("Default PC110 firmware and Personaware-realbios.img are ready. Select a disk image to override it.");
 updateControls();

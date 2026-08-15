@@ -1,6 +1,7 @@
 # Future Next.js application
 frontend/node_modules/
 frontend/.next/
+.next/
 
 # Local editor and operating-system files
 .DS_Store

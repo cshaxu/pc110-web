@@ -15,11 +15,9 @@ export default function HomePage() {
     <main className="application">
       <header>
         <h1>PC110 Web</h1>
-        <p>Choose PC110 media, then start the browser-local emulator.</p>
+        <p>Choose a disk image, then start the browser-local emulator.</p>
       </header>
       <section className="controls" aria-label="PC110 media">
-        <label>PC110 BIOS <input id="bios" type="file" required /><span id="bios-state" className="file-state">No file selected</span></label>
-        <label>PC110 font ROM <input id="font-rom" type="file" required /><span id="font-rom-state" className="file-state">No file selected</span></label>
         <label>Personaware disk image <input id="disk" type="file" required /><span id="disk-state" className="file-state">No file selected</span></label>
         <button id="start" type="button" disabled>Start PC110</button>
         <button id="restart" type="button" disabled>Restart</button>

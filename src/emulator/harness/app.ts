@@ -17,15 +17,10 @@ const restart = requiredElement<HTMLButtonElement>("#restart");
 const fullscreen = requiredElement<HTMLButtonElement>("#fullscreen");
 const displayShell = requiredElement<HTMLElement>("#display-shell");
 const canvas = requiredElement<HTMLCanvasElement>("#display");
-const bios = requiredElement<HTMLInputElement>("#bios");
-const fontRom = requiredElement<HTMLInputElement>("#font-rom");
 const disk = requiredElement<HTMLInputElement>("#disk");
 const fileInputs = [
-  [bios, requiredElement<HTMLElement>("#bios-state")],
-  [fontRom, requiredElement<HTMLElement>("#font-rom-state")],
   [disk, requiredElement<HTMLElement>("#disk-state")]
 ] as const;
-const localVerification = new URLSearchParams(window.location.search).has("local-verification");
 let activeSession: Pc110Session | undefined;
 let starting = false;
 
@@ -36,7 +31,7 @@ function formatFile(input: HTMLInputElement): string {
 
 function updateControls(): void {
   for (const [input, state] of fileInputs) state.textContent = formatFile(input);
-  const ready = localVerification || fileInputs.every(([input]) => Boolean(input.files?.[0]));
+  const ready = fileInputs.every(([input]) => Boolean(input.files?.[0]));
   start.disabled = starting || Boolean(activeSession) || !ready;
   restart.disabled = starting || !activeSession;
 }
@@ -80,6 +75,12 @@ async function fetchRuntimeFile(path: string): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+async function fetchDefaultFirmware(path: string, role: string): Promise<LocalAsset> {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`Default PC110 ${role} is unavailable: ${path}`);
+  return { name: path.split("/").at(-1) ?? role, bytes: new Uint8Array(await response.arrayBuffer()) };
+}
+
 async function fetchLocalVerificationAsset(path: string, role: string): Promise<LocalAsset> {
   const response = await fetch(new URL(path, localMediaRoot));
   if (!response.ok) {
@@ -109,14 +110,12 @@ async function startPc110(): Promise<void> {
     report("PC110 runtime module loaded.");
     const vgaBios = await fetchRuntimeFile("pc-bios/vgabios-stdvga.bin");
     report("PC110 VGA BIOS loaded.");
-    const launchFiles = localVerification
-      ? await Promise.all([
-        fetchLocalVerificationAsset("Firmware/pc110_bios.bin", "BIOS"),
-        fetchLocalVerificationAsset("Firmware/MSM538032E@SOP44.BIN", "font ROM"),
-        fetchLocalVerificationAsset("Boot%20Media/Personaware-realbios.img", "real-BIOS disk image")
-      ])
-      : await Promise.all([readAsset(bios, "BIOS"), readAsset(fontRom, "font ROM"), readAsset(disk, "disk image")]);
-    report("PC110 local media loaded.");
+    const launchFiles = await Promise.all([
+      fetchDefaultFirmware("/pc110/firmware/pc110_bios.bin", "BIOS"),
+      fetchDefaultFirmware("/pc110/firmware/pc110_fontrom.bin", "font ROM"),
+      readAsset(disk, "disk image")
+    ]);
+    report("PC110 firmware and disk image loaded.");
     let session: Pc110Session | undefined;
     const restoreAfterRuntimeFailure = (message: string): void => {
       report(message);
@@ -171,4 +170,5 @@ fullscreen.addEventListener("click", () => {
 document.addEventListener("fullscreenchange", () => {
   fullscreen.textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
 });
+report("Choose a disk image to begin.");
 updateControls();

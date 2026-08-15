@@ -24,6 +24,7 @@ const fileInputs = [
 ] as const;
 let activeSession: Pc110Session | undefined;
 let starting = false;
+let launchAttempt = 0;
 
 function formatFile(input: HTMLInputElement): string {
   const file = input.files?.[0];
@@ -34,7 +35,7 @@ function updateControls(): void {
   for (const [input, state] of fileInputs) state.textContent = formatFile(input);
   const ready = true;
   start.disabled = starting || Boolean(activeSession) || !ready;
-  restart.disabled = starting || !activeSession;
+  restart.disabled = false;
   pause.disabled = true;
 }
 
@@ -104,6 +105,7 @@ async function loadModuleFactory(): Promise<EmscriptenQemuFactory> {
 
 async function startPc110(): Promise<void> {
   if (starting || activeSession) return;
+  const attempt = ++launchAttempt;
   starting = true;
   updateControls();
   report("Loading PC110 runtime…");
@@ -142,12 +144,27 @@ async function startPc110(): Promise<void> {
       bytes: extractPc110EasySetup(launchFiles[0].bytes)
     };
     report("PC110 Easy-Setup payload unpacked in browser memory.");
-    await session.start({ bios: launchFiles[0], fontRom: launchFiles[1], disk: launchFiles[2], easySetup });
+    let timeoutId: number | undefined;
+    try {
+      await Promise.race([
+        session.start({ bios: launchFiles[0], fontRom: launchFiles[1], disk: launchFiles[2], easySetup }),
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error("PC110 startup timed out after 45 seconds. Check deployment headers and runtime files, then reset and try again.")), 45_000);
+        })
+      ]);
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    }
+    if (attempt !== launchAttempt) {
+      await session.dispose();
+      return;
+    }
     activeSession = session;
     starting = false;
     updateControls();
     canvas.focus();
   } catch (error) {
+    if (attempt !== launchAttempt) return;
     report(describeStartupError(error));
     starting = false;
     updateControls();
@@ -157,10 +174,12 @@ async function startPc110(): Promise<void> {
 for (const [input] of fileInputs) input.addEventListener("change", updateControls);
 start.addEventListener("click", () => { void startPc110(); });
 restart.addEventListener("click", () => {
-  if (!activeSession) return;
+  launchAttempt += 1;
   const session = activeSession;
   activeSession = undefined;
-  void session.dispose().finally(() => { updateControls(); void startPc110(); });
+  starting = false;
+  report("PC110 player reset. Start again with the default disk or choose an override.");
+  void session?.dispose().finally(updateControls);
 });
 fullscreen.addEventListener("click", () => {
   if (document.fullscreenElement) {

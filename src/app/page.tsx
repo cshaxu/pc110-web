@@ -25,11 +25,16 @@ export default function HomePage() {
       </header>
       {loadError ? <p id="load-error" role="alert">Player initialization failed: {loadError}</p> : null}
       <p className="capture-guidance">Click the display to capture keyboard and pointer input. Press <kbd>Right Shift</kbd> to release capture.</p>
-      <section id="display-shell" className="display-shell" aria-label="PC110 display">
-        <button id="fullscreen" className="fullscreen-button" type="button" title="Enter full screen" aria-label="Enter full screen">⛶</button>
-        <div className="display-viewport"><canvas id="display" width="720" height="400" tabIndex={0}>PC110 display canvas</canvas></div>
+      <section className="player-workspace" aria-label="PC110 player workspace">
+        <section id="display-shell" className="display-shell" aria-label="PC110 display">
+          <button id="fullscreen" className="fullscreen-button" type="button" title="Enter full screen" aria-label="Enter full screen">⛶</button>
+          <div className="display-viewport"><canvas id="display" width="720" height="400" tabIndex={0}>PC110 display canvas</canvas></div>
+        </section>
+        <aside className="runtime-output" aria-label="PC110 runtime output">
+          <header>Runtime output</header>
+          <pre id="status" role="status" aria-live="polite">Loading PC110 player…</pre>
+        </aside>
       </section>
-      <p id="status" role="status">Loading PC110 player…</p>
     </main>
   );
 }

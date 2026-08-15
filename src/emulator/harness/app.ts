@@ -43,8 +43,10 @@ function report(message: string): void {
   const nextMessage = message || "Starting PC110…";
   const history = (status.dataset.history ?? "").split("\n").filter(Boolean);
   history.push(nextMessage);
-  status.dataset.history = history.slice(-16).join("\n");
-  status.textContent = nextMessage;
+  const visibleHistory = history.slice(-200).join("\n");
+  status.dataset.history = visibleHistory;
+  status.textContent = visibleHistory;
+  status.scrollTop = status.scrollHeight;
 }
 
 function describeStartupError(error: unknown): string {

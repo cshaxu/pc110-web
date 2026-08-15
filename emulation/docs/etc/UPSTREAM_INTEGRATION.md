@@ -1,10 +1,13 @@
-# Upstream Integration Model
+# Historical Upstream Integration Model
 
 **Owner:** Web technical lead
 
-**Purpose:** Keep browser-product work independent while preserving a clean path for non-Web contributions to the original PC110-QEMU project.
+**Purpose:** Preserve the historical branch-topology record from the former monorepo.
 
-**Retirement condition:** The fork ceases to track an upstream project or an approved replacement contribution model supersedes this document.
+**Retirement condition:** Retained as history; its branch topology is no longer a current rule for this repository.
+
+> This document describes the former `pc110-qemu` monorepo. The current
+> independent-repository authority is `PC110_QEMU_DEPENDENCY.md`.
 
 ## Branch topology
 

@@ -12,7 +12,7 @@ import path from 'node:path';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(scriptDir, '..');
-const cacheDir = path.join(projectDir, '.cache');
+const cacheDir = process.env.PC110_WEB_CACHE_DIR ?? path.join(projectDir, '.cache');
 const emsdkDir = path.join(cacheDir, 'emsdk');
 const stage = process.env.PC110_WEB_BUILD_STAGE ?? 'portable';
 const yes = process.argv.includes('--yes');
@@ -79,12 +79,21 @@ if (missing.length) {
   }
   run(plan.install[0], plan.install.slice(1));
 }
-if (!existsSync(path.join(emsdkDir, 'emsdk_env.sh'))) {
+if (!existsSync(path.join(emsdkDir, '.emscripten'))) {
   console.log(`\nWill clone Emscripten SDK into ${emsdkDir}.`);
   if (!(await confirm('Download and activate the Emscripten SDK now?'))) process.exit(0);
-  run('git', ['clone', 'https://github.com/emscripten-core/emsdk.git', emsdkDir]);
-  run(path.join(emsdkDir, process.platform === 'win32' ? 'emsdk.bat' : 'emsdk'), ['install', 'latest']);
-  run(path.join(emsdkDir, process.platform === 'win32' ? 'emsdk.bat' : 'emsdk'), ['activate', 'latest']);
+  if (!existsSync(path.join(emsdkDir, '.git'))) {
+    run('git', ['clone', 'https://github.com/emscripten-core/emsdk.git', emsdkDir]);
+  }
+  if (process.platform === 'win32') {
+    const launcher = path.join(emsdkDir, 'emsdk.bat');
+    run('cmd.exe', ['/c', launcher, 'install', 'latest']);
+    run('cmd.exe', ['/c', launcher, 'activate', 'latest']);
+  } else {
+    const launcher = path.join(emsdkDir, 'emsdk');
+    run(launcher, ['install', 'latest']);
+    run(launcher, ['activate', 'latest']);
+  }
 }
 if (prepareOnly) {
   console.log('\nSetup complete. Re-run without --prepare-only to compile.');

@@ -38,7 +38,7 @@ sources_dir="$work_dir/sources"
 builds_dir="$work_dir/builds"
 downloads_dir="$work_dir/downloads"
 manifest_dir="$work_dir/manifest"
-mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$sysroot"
+mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$sysroot/lib/pkgconfig"
 
 # QEMU detects SDL through pkg-config. Emscripten supplies SDL2 as a link-time
 # port rather than a sysroot package, so publish the narrow descriptor that

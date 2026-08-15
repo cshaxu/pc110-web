@@ -15,11 +15,11 @@ export default function HomePage() {
     <main className="application">
       <header>
         <h1>PC110 Web</h1>
-        <p>Choose a disk image, then start the browser-local emulator.</p>
+        <p>Start with the included real-BIOS disk, or choose your own disk image to override it.</p>
       </header>
       <section className="controls" aria-label="PC110 media">
-        <label>Personaware disk image <input id="disk" type="file" required /><span id="disk-state" className="file-state">No file selected</span></label>
-        <button id="start" type="button" disabled>Start PC110</button>
+        <label>Optional disk image override <input id="disk" type="file" /><span id="disk-state" className="file-state">Default: Personaware-realbios.img</span></label>
+        <button id="start" type="button">Start PC110</button>
         <button id="restart" type="button" disabled>Restart</button>
       </section>
       <p id="status" role="status">Loading PC110 player…</p>

@@ -26,12 +26,12 @@ let starting = false;
 
 function formatFile(input: HTMLInputElement): string {
   const file = input.files?.[0];
-  return file ? `${file.name} (${Math.ceil(file.size / 1024)} KiB)` : "No file selected";
+  return file ? `${file.name} (${Math.ceil(file.size / 1024)} KiB)` : "Default: Personaware-realbios.img";
 }
 
 function updateControls(): void {
   for (const [input, state] of fileInputs) state.textContent = formatFile(input);
-  const ready = fileInputs.every(([input]) => Boolean(input.files?.[0]));
+  const ready = true;
   start.disabled = starting || Boolean(activeSession) || !ready;
   restart.disabled = starting || !activeSession;
 }
@@ -113,7 +113,9 @@ async function startPc110(): Promise<void> {
     const launchFiles = await Promise.all([
       fetchDefaultFirmware("/pc110/firmware/pc110_bios.bin", "BIOS"),
       fetchDefaultFirmware("/pc110/firmware/pc110_fontrom.bin", "font ROM"),
-      readAsset(disk, "disk image")
+      disk.files?.[0]
+        ? readAsset(disk, "disk image")
+        : fetchDefaultFirmware("/pc110/disks/Personaware-realbios.img", "disk image")
     ]);
     report("PC110 firmware and disk image loaded.");
     let session: Pc110Session | undefined;
@@ -170,5 +172,5 @@ fullscreen.addEventListener("click", () => {
 document.addEventListener("fullscreenchange", () => {
   fullscreen.textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
 });
-report("Choose a disk image to begin.");
+report("Default PC110 firmware and Personaware-realbios.img are ready. Select a disk image to override it.");
 updateControls();

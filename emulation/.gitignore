@@ -2,5 +2,6 @@ node_modules/
 dist/
 coverage/
 .cache/
+.cache-*/
 qemu-src/
 artifacts/

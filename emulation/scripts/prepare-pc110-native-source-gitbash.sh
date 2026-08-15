@@ -10,7 +10,8 @@ qemu_git_source_dir=$1
 native_source_dir=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/.." && pwd)
-pc110_qemu_dir=${PC110_WEB_PC110_QEMU_DIR:-"$project_root/.cache/pc110-qemu-src"}
+cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
+pc110_qemu_dir=${PC110_WEB_PC110_QEMU_DIR:-"$cache_dir/pc110-qemu-src"}
 
 if [[ ! -d "$qemu_git_source_dir/.git" ]]; then
   echo "QEMU Git source was not found: $qemu_git_source_dir" >&2

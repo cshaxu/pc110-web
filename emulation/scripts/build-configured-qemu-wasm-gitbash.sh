@@ -12,7 +12,9 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/.." && pwd -P)
 
 qemu_build_dir=$(cd "$qemu_build_dir" && pwd -P)
-artifact_parent=$(cd "$(dirname "$artifact_dir")" && pwd -P)
+artifact_parent_input=$(dirname "$artifact_dir")
+mkdir -p "$artifact_parent_input"
+artifact_parent=$(cd "$artifact_parent_input" && pwd -P)
 artifact_dir="$artifact_parent/$(basename "$artifact_dir")"
 
 if [[ ! -f "$qemu_build_dir/build.ninja" ]]; then

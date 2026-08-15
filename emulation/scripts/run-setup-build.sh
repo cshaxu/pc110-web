@@ -23,7 +23,7 @@ qemu_git_dir="$cache_dir/qemu-git-$stage"
 source_dir="$cache_dir/pc110-wasm-src-$stage"
 build_dir="$cache_dir/pc110-wasm-build-$stage"
 record_dir="$cache_dir/pc110-wasm-record-$stage"
-artifact_dir=${PC110_WEB_ARTIFACT_DIR:-"$project_root/artifacts/qemu-system-i386"}
+artifact_dir=${PC110_WEB_ARTIFACT_DIR:-"$project_root/artifacts"}
 deps_dir="$cache_dir/wasm-deps-$stage"
 sysroot="$cache_dir/wasm-sysroot-$stage"
 
@@ -44,8 +44,12 @@ if [[ ! -d "$pc110_qemu_dir/.git" ]]; then
   git clone --no-checkout https://github.com/cshaxu/pc110-qemu.git "$pc110_qemu_dir"
   git -C "$pc110_qemu_dir" checkout --detach "$pc110_qemu_revision"
 fi
-if [[ ! -d "$source_dir" ]]; then
-  PC110_WEB_PC110_QEMU_DIR="$pc110_qemu_dir" "$script_dir/prepare-pc110-wasm-source-gitbash.sh" "$qemu_git_dir" "$source_dir"
+if [[ ! -f "$source_dir/subprojects/keycodemapdb/README" ]]; then
+  if [[ -e "$source_dir" ]]; then
+    echo "PC110 WASM source is incomplete; choose a new PC110_WEB_BUILD_STAGE before retrying" >&2
+    exit 80
+  fi
+  "$script_dir/prepare-pc110-wasm-source-gitbash.sh" "$qemu_git_dir" "$source_dir" "$pc110_qemu_dir"
 fi
 if [[ ! -d "$deps_dir" ]]; then
   "$script_dir/build-wasm-dependencies-gitbash.sh" "$deps_dir" "$sysroot"

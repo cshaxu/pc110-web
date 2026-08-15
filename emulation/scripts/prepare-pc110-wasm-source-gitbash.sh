@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "usage: $0 <qemu-git-source-dir> <pc110-wasm-source-dir>" >&2
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+  echo "usage: $0 <qemu-git-source-dir> <pc110-wasm-source-dir> [pc110-qemu-source-dir]" >&2
   exit 64
 fi
 
@@ -10,7 +10,8 @@ qemu_git_source_dir=$1
 wasm_source_dir=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/.." && pwd)
-pc110_qemu_dir=${PC110_WEB_PC110_QEMU_DIR:-"$project_root/.cache/pc110-qemu-src"}
+cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
+pc110_qemu_dir=${3:-${PC110_WEB_PC110_QEMU_DIR:-"$cache_dir/pc110-qemu-src"}}
 
 if [[ ! -d "$qemu_git_source_dir/.git" ]]; then
   echo "QEMU Git source was not found: $qemu_git_source_dir" >&2

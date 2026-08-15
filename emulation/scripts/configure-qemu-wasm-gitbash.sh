@@ -11,6 +11,7 @@ qemu_build_dir=$2
 record_dir=$3
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/.." && pwd)
+cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
 
 if [[ ! -x "$qemu_source_dir/configure" ]]; then
   echo "QEMU configure script was not found at $qemu_source_dir/configure" >&2
@@ -49,6 +50,9 @@ if [[ -e "$qemu_build_dir" || -e "$record_dir" ]]; then
 fi
 
 source "$script_dir/gitbash-emsdk-env.sh"
+if [[ -d /c/msys64/ucrt64/bin ]]; then
+  export PATH="/c/msys64/ucrt64/bin:$PATH"
+fi
 # The adapter uses this flag only to validate Emscripten discovery.  QEMU's
 # Meson configuration performs real target link probes and must not inherit it.
 unset EMMAKEN_JUST_CONFIGURE
@@ -120,7 +124,7 @@ mkdir -p "$qemu_build_dir"
 cat > "$python_wrapper" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-real_python="$project_root/.cache/gitbash-bin/python3"
+real_python="$cache_dir/gitbash-bin/python3"
 bootstrap_wheels_dir="$bootstrap_wheels_dir"
 qemu_python_dir="$qemu_source_dir/python"
 qemu_qmp_wheel="$qemu_source_dir/python/wheels/qemu_qmp-0.0.5-py3-none-any.whl"

@@ -166,6 +166,10 @@ download_and_extract() {
     # GLib's COPYING is a source-tree symlink; Git Bash extraction can create
     # it before its target is available on Windows. It is not a build input.
     tar -xf "$archive" --exclude=COPYING --strip-components=1 -C "$destination"
+  elif [[ "$name" == pixman-* ]]; then
+    # Pixman's CI-only cross files include symlinks that Git Bash cannot
+    # create on this Windows host; they are not part of the library build.
+    tar -xf "$archive" --exclude='.gitlab-ci.d/meson-cross/*' --strip-components=1 -C "$destination"
   else
     tar -xf "$archive" --strip-components=1 -C "$destination"
   fi
@@ -252,7 +256,10 @@ export LDFLAGS="-m64 -sMEMORY64=1 -sWASM_BIGINT -pthread -L$sysroot/lib"
 "$sources_dir/pcre2/configure" --host=wasm64-unknown-emscripten --prefix="$sysroot" \
   --enable-static --disable-shared --disable-dependency-tracking --disable-jit --enable-pcre2-8 --disable-pcre2-16 --disable-pcre2-32 \
   --disable-pcre2grep-libz --disable-pcre2test-libedit --disable-pcre2test-libreadline
-"$make_bin" -j"$(nproc)"
+# The optional POSIX wrapper races libtool's static archive descriptor on the
+# Git-Bash/MSYS boundary. GLib requires only PCRE2's 8-bit static library, so
+# build that target directly instead of the aggregate program/wrapper target.
+"$make_bin" -j"$(nproc)" libpcre2-8.la
 # libtool on this Git-Bash/MSYS boundary installs only the .la descriptor for
 # a static-only PCRE2 build and then fails on the optional POSIX wrapper. GLib
 # requires the 8-bit static archive, headers, and pkg-config metadata only.
@@ -265,11 +272,22 @@ download_and_extract "glib-$glib_version.tar.xz" \
   "https://download.gnome.org/sources/glib/2.84/glib-$glib_version.tar.xz" "$sources_dir/glib"
 "$meson_bin" setup "$builds_dir/glib" "$sources_dir/glib" --prefix="$sysroot" \
   --native-file="$work_dir/host-tools.native" --cross-file="$work_dir/emscripten-wasm64.cross" --default-library=static --buildtype=release \
-  -Dselinux=disabled -Dxattr=false -Dlibmount=disabled -Dnls=disabled \
+  -Dselinux=disabled -Dxattr=false -Dlibmount=disabled -Dnls=disabled -Dsysprof=disabled -Dintrospection=disabled \
   -Dtests=false -Dglib_debug=disabled -Dglib_assert=false -Dglib_checks=false
 sed -i -E '/#define HAVE_POSIX_SPAWN 1/d' "$builds_dir/glib/config.h"
 sed -i -E '/#define HAVE_PTHREAD_GETNAME_NP 1/d' "$builds_dir/glib/config.h"
-"$meson_bin" install -C "$builds_dir/glib"
+# GLib 2.84 emits GDB auto-load destinations containing the Windows drive
+# prefix. Meson cannot create those optional debug-script directories on this
+# host, although the static libraries, headers and pkg-config files have
+# already installed. Treat precisely that tail failure as non-fatal only after
+# verifying the build inputs QEMU consumes are present.
+if ! "$meson_bin" install -C "$builds_dir/glib"; then
+  if [[ ! -f "$sysroot/lib/libglib-2.0.a" || ! -f "$sysroot/lib/pkgconfig/glib-2.0.pc" || ! -f "$sysroot/include/glib-2.0/glib.h" ]]; then
+    echo "GLib installation did not produce the required static development files" >&2
+    exit 70
+  fi
+  echo "Ignored Windows-only GLib GDB auto-load installation failure after verifying static development files."
+fi
 
 # Static dependencies need to propagate their pthread ABI requirement, but an
 # Emscripten worker-pool size is an application-level browser runtime policy.

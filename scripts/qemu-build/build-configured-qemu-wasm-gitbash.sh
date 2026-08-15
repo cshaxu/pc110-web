@@ -9,7 +9,7 @@ fi
 qemu_build_dir=$1
 artifact_dir=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-project_root=$(cd "$script_dir/.." && pwd -P)
+project_root=$(cd "$script_dir/../.." && pwd -P)
 
 qemu_build_dir=$(cd "$qemu_build_dir" && pwd -P)
 artifact_parent_input=$(dirname "$artifact_dir")

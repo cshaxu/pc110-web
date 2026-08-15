@@ -2,8 +2,8 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, normalize, relative, resolve } from "node:path";
 
-const root = resolve(import.meta.dirname, "..");
-const artifactRoot = resolve(process.env.PC110_WEB_ARTIFACT_DIR ?? resolve(root, "artifacts"));
+const root = resolve(import.meta.dirname, "..", "..");
+const artifactRoot = resolve(process.env.PC110_WEB_ARTIFACT_DIR ?? resolve(root, "public", "emulator"));
 const localMediaRoot = resolve(
   process.env.PC110_WEB_LOCAL_MEDIA_ROOT ?? "O:/assets/PC110Atlas-Personal-Media"
 );
@@ -27,7 +27,7 @@ function resolvePublicFile(requestPath) {
     return resolve(artifactRoot, normalize(relativePath));
   }
 
-  const relativePath = requestPath === "/" ? "index.html" : requestPath.replace(/^\/+/, "");
+  const relativePath = requestPath === "/" ? "src/emulator/harness/index.html" : requestPath.replace(/^\/+/, "");
   return resolve(root, normalize(relativePath));
 }
 

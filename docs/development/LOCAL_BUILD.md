@@ -1,25 +1,27 @@
 # PC110-QEMU Web
 
-This directory is the PC110 browser-emulation layer. It owns the browser bridge, TypeScript application, Web-only QEMU patches, and its governance. Generated QEMU source, SDKs, build output, and test media remain untracked. The repository root may additionally contain a future Next.js frontend.
+This repository contains the PC110 browser-emulation runtime. `src/emulator/`
+owns the browser bridge, session, and diagnostic harness; `qemu/patches/` and
+`scripts/qemu-build/` own the replayable local QEMU build inputs. Generated
+QEMU source, SDKs, build output, and test media remain untracked.
 
 - Machine simulation remains owned by the fixed QEMU baseline and existing PC110 devices and patches.
-- Future Web-specific QEMU changes belong in `qemu-patches/` as a replayable patch series. Do not commit a generated full QEMU source tree.
-- Page, Canvas, input, browser storage, asset import, and deployment code belong only here.
-- The PC110 simulator core is consumed through the pinned external dependency described in [PC110-QEMU dependency](docs/etc/PC110_QEMU_DEPENDENCY.md).
+- Web-specific QEMU changes belong in `qemu/patches/` as a replayable patch series. Do not commit a generated full QEMU source tree.
+- Product page and deployment code belongs in `src/app/`; browser runtime code belongs in `src/emulator/`.
+- The PC110 simulator core is consumed through the pinned external dependency described in [PC110-QEMU dependency](../etc/PC110_QEMU_DEPENDENCY.md).
 
 For Web development and tests, use the Git Bash-managed Node.js 22 and npm installation. Emscripten's bundled Node runtime is reserved for Emscripten's own build tooling; it is not the project npm runtime.
 
 ## Quick Start
 
 This guide starts the browser application after a collaborator has obtained or
-built the untracked Web artifacts (`artifacts/qemu-system-i386.js` and
-`artifacts/qemu-system-i386.wasm`). It never downloads, bundles, or publishes
-PC110 media.
+built the runtime artifacts (`public/emulator/qemu-system-i386.js` and
+`public/emulator/qemu-system-i386.wasm`).
 
-1. In Git Bash, enter this directory and run the local server:
+1. In Git Bash, enter the repository root and run the local server:
 
    ```sh
-   cd web && npm run serve
+   npm run serve
    ```
 
    This is the one command needed to serve an existing Web build. It listens
@@ -57,7 +59,7 @@ the page controls.
 
 ## Build the QEMU Web Runtime
 
-From `emulation/`, run one interactive command:
+From the repository root, run one interactive command:
 
 ```sh
 npm run setup-build
@@ -86,4 +88,4 @@ The Windows route needs Git Bash and uses MSYS2 only for native host utilities; 
   Emscripten runtime, so use its `127.0.0.1` URL rather than opening
   `index.html` directly from disk.
 
-See [`docs/design/`](docs/design/) for the detailed architecture, layout, and roadmap.
+See [`../design/`](../design/) for the detailed architecture, layout, and roadmap.

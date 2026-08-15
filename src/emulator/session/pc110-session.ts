@@ -3,7 +3,7 @@ export {
   Pc110Session,
   buildPc110LaunchPlan,
   extractPc110EasySetup
-} from "../../bridge/pc110-session.js";
+} from "../bridge/pc110-session.js";
 
 export type {
   LocalAsset,
@@ -15,4 +15,4 @@ export type {
   QemuModuleFactory,
   QemuModuleHandle,
   QemuModuleRequest
-} from "../../bridge/pc110-session.js";
+} from "../bridge/pc110-session.js";

@@ -3,7 +3,7 @@ import {
   Pc110Session,
   buildPc110LaunchPlan,
   type LocalAsset
-} from "../bridge/pc110-session.js";
+} from "../../src/emulator/bridge/pc110-session.js";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {

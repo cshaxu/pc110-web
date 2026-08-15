@@ -9,7 +9,7 @@ fi
 qemu_git_source_dir=$1
 wasm_source_dir=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-project_root=$(cd "$script_dir/.." && pwd)
+project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
 pc110_qemu_dir=${3:-${PC110_WEB_PC110_QEMU_DIR:-"$cache_dir/pc110-qemu-src"}}
 
@@ -52,7 +52,7 @@ for patch_file in "$pc110_qemu_dir"/qemu/patches/*.patch; do
   git -C "$wasm_source_dir" apply "$patch_file"
 done
 
-for patch_file in "$project_root"/qemu-patches/*.patch; do
+for patch_file in "$project_root"/qemu/patches/*.patch; do
   git -C "$wasm_source_dir" apply --check "$patch_file"
   git -C "$wasm_source_dir" apply "$patch_file"
 done

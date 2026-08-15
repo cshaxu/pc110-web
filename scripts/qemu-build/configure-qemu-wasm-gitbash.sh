@@ -10,7 +10,7 @@ qemu_source_dir=$1
 qemu_build_dir=$2
 record_dir=$3
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-project_root=$(cd "$script_dir/.." && pwd)
+project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
 
 if [[ ! -x "$qemu_source_dir/configure" ]]; then
@@ -28,12 +28,12 @@ qemu_build_dir="$(cd "$(dirname "$qemu_build_dir")" && pwd)/$(basename "$qemu_bu
 record_dir="$(cd "$(dirname "$record_dir")" && pwd)/$(basename "$record_dir")"
 
 qemu_patches=(
-  "$project_root/qemu-patches/0001-emscripten-skip-symlink-install-tree.patch"
-  "$project_root/qemu-patches/0002-emscripten-use-predefined-cacheflush-guard.patch"
-  "$project_root/qemu-patches/0003-emscripten-guard-posix-block-probes.patch"
-  "$project_root/qemu-patches/0004-emscripten-propagate-compile-define.patch"
-  "$project_root/qemu-patches/0005-emscripten-web-display.patch"
-  "$project_root/qemu-patches/0006-emscripten-pump-event-proxies.patch"
+  "$project_root/qemu/patches/0001-emscripten-skip-symlink-install-tree.patch"
+  "$project_root/qemu/patches/0002-emscripten-use-predefined-cacheflush-guard.patch"
+  "$project_root/qemu/patches/0003-emscripten-guard-posix-block-probes.patch"
+  "$project_root/qemu/patches/0004-emscripten-propagate-compile-define.patch"
+  "$project_root/qemu/patches/0005-emscripten-web-display.patch"
+  "$project_root/qemu/patches/0006-emscripten-pump-event-proxies.patch"
 )
 for qemu_patch in "${qemu_patches[@]}"; do
   if git -C "$qemu_source_dir" apply --check "$qemu_patch"; then

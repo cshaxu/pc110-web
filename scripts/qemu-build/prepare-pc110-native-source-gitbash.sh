@@ -9,7 +9,7 @@ fi
 qemu_git_source_dir=$1
 native_source_dir=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-project_root=$(cd "$script_dir/.." && pwd)
+project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
 pc110_qemu_dir=${PC110_WEB_PC110_QEMU_DIR:-"$cache_dir/pc110-qemu-src"}
 
@@ -52,7 +52,7 @@ for patch_file in "$pc110_qemu_dir"/qemu/patches/*.patch; do
   fi
 done
 
-staging_patch="$project_root/qemu-patches/0001-emscripten-skip-symlink-install-tree.patch"
+staging_patch="$project_root/qemu/patches/0001-emscripten-skip-symlink-install-tree.patch"
 if git -C "$native_source_dir" apply --check "$staging_patch"; then
   git -C "$native_source_dir" apply "$staging_patch"
 else

@@ -1,4 +1,4 @@
-import { createEmscriptenQemuBridge, type EmscriptenQemuFactory } from "../../bridge/emscripten-qemu.js";
+import { createEmscriptenQemuBridge, type EmscriptenQemuFactory } from "../bridge/emscripten-qemu.js";
 import { extractPc110EasySetup, Pc110Session, type LocalAsset } from "../session/pc110-session.js";
 
 const artifactRoot = new URL("./artifacts/", window.location.href);

@@ -5,3 +5,13 @@ frontend/.next/
 # Local editor and operating-system files
 .DS_Store
 Thumbs.db
+
+# Generated emulator build and local-only inputs
+node_modules/
+dist/
+coverage/
+.cache/
+.cache-*/
+qemu-src/
+artifacts/
+emscripten-libs/

@@ -32,9 +32,9 @@ docs/                             # MTSP governance, design, states, and history
 pc110-qemu.lock.json              # Exact upstream source dependency
 ```
 
-The existing `emulation/` directory is a transitional implementation layout.
-It will be moved in scope-pure implementation Parts; this governance decision
-does not move runtime code, build scripts, tests, or media.
+The legacy `emulation/` directory has no tracked implementation files. Ignored
+local caches that predate the migration may remain on a developer workstation;
+they are not part of the repository layout.
 
 ## Module boundaries
 

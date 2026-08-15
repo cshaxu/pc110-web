@@ -1,10 +1,10 @@
 # Current Status
 
-**Status: Governance updated — M0 Td S8 P1 closed.** The independent Windows-native
+**Status: Verified — M3 T3 S1 P1 integrated runtime structure migration closed.** The independent Windows-native
 clean build now produces and browser-boots a PC110-enabled WASM artifact while
 preserving the controlled local-media boundary. The next admission
-may perform a scope-pure implementation migration toward the integrated layout,
-beginning with runtime-contract extraction.
+now uses the integrated layout. The next admission may extract the versioned
+runtime contract.
 
 Current technical baseline: fork `cshaxu/pc110-qemu`, HEAD `bae390e` (2026-07-21). The native build script pins QEMU 11.0.2. QEMU 11.0.2 source has an Emscripten/`wasm64` path requiring `--enable-tcg-interpreter`; current Emscripten compatibility requires the explicit legacy detection flag `-DEMSCRIPTEN` for this baseline. The admitted local direction is Git Bash as a Windows-native POSIX host, not MSYS2, WSL, Docker, or remote execution. Git Bash Node.js 22/npm is the project runtime for TypeScript, tests, and local serving; Emscripten's bundled Node is only for Emscripten build tooling. Generated source, SDK, and probe outputs remain ignored.
 

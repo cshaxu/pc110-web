@@ -6,7 +6,7 @@ set -euo pipefail
 # adapter is intentionally stopped until its native build is verified.
 stage=${1:?stage is required}
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-project_root=$(cd "$script_dir/.." && pwd)
+project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
 
 if [[ "$(uname -s)" != MINGW* && "$(uname -s)" != MSYS* ]]; then
@@ -23,7 +23,7 @@ qemu_git_dir="$cache_dir/qemu-git-$stage"
 source_dir="$cache_dir/pc110-wasm-src-$stage"
 build_dir="$cache_dir/pc110-wasm-build-$stage"
 record_dir="$cache_dir/pc110-wasm-record-$stage"
-artifact_dir=${PC110_WEB_ARTIFACT_DIR:-"$project_root/artifacts"}
+artifact_dir=${PC110_WEB_ARTIFACT_DIR:-"$project_root/public/emulator"}
 deps_dir="$cache_dir/wasm-deps-$stage"
 sysroot="$cache_dir/wasm-sysroot-$stage"
 

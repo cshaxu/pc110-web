@@ -55,7 +55,7 @@ function hostPlan() {
 
 const plan = hostPlan();
 console.log(`PC110 Web setup/build\nHost: ${plan.label}\nCache: ${cacheDir}\nStage: ${stage}`);
-console.log('\nThis command may install host packages, clone Emscripten and QEMU, download source archives, and create build outputs under emulation/.cache/.');
+console.log('\nThis command may install host packages, clone Emscripten and QEMU, download source archives, and create build outputs under .cache/.');
 if (!(await confirm('Continue with the setup plan?'))) process.exit(0);
 
 if (plan.needsBash && !process.env.MSYSTEM) {

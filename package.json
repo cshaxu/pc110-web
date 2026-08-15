@@ -6,9 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node dist/tests/pc110-session-contract.spec.js && node dist/tests/emscripten-qemu-recovery.spec.js",
-    "serve": "node scripts/serve.mjs",
-    "setup-build": "node scripts/setup-build.mjs"
+    "test": "npm run build && node dist/tests/emulator/pc110-session-contract.spec.js && node dist/tests/emulator/emscripten-qemu-recovery.spec.js",
+    "serve": "node scripts/dev/serve.mjs",
+    "setup-build": "node scripts/qemu-build/setup-build.mjs"
   },
   "devDependencies": {
     "typescript": "5.7.3"

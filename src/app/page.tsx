@@ -24,7 +24,7 @@ export default function HomePage() {
         </section>
       </header>
       {loadError ? <p id="load-error" role="alert">Player initialization failed: {loadError}</p> : null}
-      <p className="capture-guidance">Click the display to capture keyboard and pointer input. Press <kbd>Right Shift</kbd> to release capture.</p>
+      <p className="capture-guidance">Click the display to send keyboard input. The PC110 pointer follows your browser pointer directly.</p>
       <section className="player-workspace" aria-label="PC110 player workspace">
         <section id="display-shell" className="display-shell" aria-label="PC110 display">
           <button id="fullscreen" className="fullscreen-button" type="button" title="Enter full screen" aria-label="Enter full screen">⛶</button>

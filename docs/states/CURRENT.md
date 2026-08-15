@@ -1,6 +1,6 @@
 # Current Status
 
-**Status: Verified — M3 T3 S1 P1 integrated runtime structure migration closed.** The independent Windows-native
+**Status: Verified — M3 T4 S1 P1 Next.js application host closed.** The independent Windows-native
 clean build now produces and browser-boots a PC110-enabled WASM artifact while
 preserving the controlled local-media boundary. The next admission
 now uses the integrated layout. The next admission may extract the versioned

@@ -1,0 +1,4 @@
+ac70d1a8a977ac57526bc33235ceb3a3b82f700fe3f500f733f18f44fabf221f *qemu-system-i386.js
+84d1cab116042d212bf28aceaac70229545d9b1c38ee621b726e554b96a0ee88 *qemu-system-i386.wasm
+06998a7944fca68c7dac21fff4dede9b165c453e15637f23552c0e3790a4c7c8 *config-host.mak
+e8fc9e55790dbe3cb31f019a3deb57206ba6c54f5e581adb2ab2677a9d391472 *pc-bios/vgabios-stdvga.bin

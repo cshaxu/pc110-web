@@ -4,13 +4,25 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node dist/tests/emulator/pc110-session-contract.spec.js && node dist/tests/emulator/emscripten-qemu-recovery.spec.js",
-    "serve": "node scripts/dev/serve.mjs",
+    "build": "next build",
+    "build:emulator": "tsc -p tsconfig.emulator.json",
+    "typecheck": "tsc -p tsconfig.emulator.json --noEmit",
+    "test": "npm run typecheck && tsx tests/emulator/pc110-session-contract.spec.ts && tsx tests/emulator/emscripten-qemu-recovery.spec.ts",
+    "dev": "next dev",
+    "start": "next start",
+    "serve:harness": "node scripts/dev/serve.mjs",
     "setup-build": "node scripts/qemu-build/setup-build.mjs"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "tsx": "^4.23.12",
     "typescript": "5.7.3"
+  },
+  "dependencies": {
+    "next": "^16.3.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }

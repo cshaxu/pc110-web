@@ -9,5 +9,6 @@
 | Verified | M3 T2 S1 P1 clean Windows WASM build | `history/M3-T2-S1-P1-clean-windows-wasm-build.md` | Fresh dependency sysroot, full QEMU artifact, checksums, contracts, and browser boot |
 | Closed | M0 Td S8 P1 integrated repository layout | `history/M0-Td-S8-P1-integrated-repository-layout.md` | Root governance and integrated target layout are current |
 | Verified | M3 T3 S1 P1 integrated runtime structure migration | `history/M3-T3-S1-P1-integrated-runtime-structure-migration.md` | Root type-check, emulator contract tests, and migrated harness serving |
+| Verified | M3 T4 S1 P1 Next.js application host | `history/M3-T4-S1-P1-nextjs-application-host.md` | Next production build and emulator contract tests |
 
 Candidates are unnumbered. They must not begin implementation or occupy `CURRENT.md`.

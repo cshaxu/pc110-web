@@ -1,4 +1,4 @@
-import { createEmscriptenQemuBridge, type EmscriptenQemuOptions } from "../../src/emulator/bridge/emscripten-qemu.js";
+import { createEmscriptenQemuBridge, type EmscriptenQemuOptions } from "../../src/emulator/bridge/emscripten-qemu";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {

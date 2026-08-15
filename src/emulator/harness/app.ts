@@ -1,7 +1,7 @@
-import { createEmscriptenQemuBridge, type EmscriptenQemuFactory } from "../bridge/emscripten-qemu.js";
-import { extractPc110EasySetup, Pc110Session, type LocalAsset } from "../session/pc110-session.js";
+import { createEmscriptenQemuBridge, type EmscriptenQemuFactory } from "../bridge/emscripten-qemu";
+import { extractPc110EasySetup, Pc110Session, type LocalAsset } from "../session/pc110-session";
 
-const artifactRoot = new URL("./artifacts/", window.location.href);
+const artifactRoot = new URL("/emulator/", window.location.origin);
 const localMediaRoot = new URL("/_pc110-local-media/", window.location.origin);
 function requiredElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -89,7 +89,10 @@ async function fetchLocalVerificationAsset(path: string, role: string): Promise<
 }
 
 async function loadModuleFactory(): Promise<EmscriptenQemuFactory> {
-  const artifact = await import(/* @vite-ignore */ new URL("qemu-system-i386.js", artifactRoot).href);
+  // The Emscripten output is a runtime-selected public asset, not an npm
+  // dependency. Keep its import outside Next's static module graph.
+  const importRuntime = new Function("url", "return import(url);") as (url: string) => Promise<unknown>;
+  const artifact = await importRuntime(new URL("qemu-system-i386.js", artifactRoot).href) as { default?: unknown };
   if (typeof artifact.default !== "function") {
     throw new Error("The QEMU artifact did not export an Emscripten module factory.");
   }

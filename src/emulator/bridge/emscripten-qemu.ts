@@ -1,4 +1,4 @@
-import type { QemuModuleFactory, QemuModuleHandle, QemuModuleRequest } from "./pc110-session.js";
+import type { QemuModuleFactory, QemuModuleHandle, QemuModuleRequest } from "./pc110-session";
 
 export interface EmscriptenFileSystem {
   mkdirTree(path: string): void;

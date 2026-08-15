@@ -13,6 +13,7 @@ function requiredElement<T extends Element>(selector: string): T {
 
 const status = requiredElement<HTMLParagraphElement>("#status");
 const start = requiredElement<HTMLButtonElement>("#start");
+const pause = requiredElement<HTMLButtonElement>("#pause");
 const restart = requiredElement<HTMLButtonElement>("#restart");
 const fullscreen = requiredElement<HTMLButtonElement>("#fullscreen");
 const displayShell = requiredElement<HTMLElement>("#display-shell");
@@ -34,6 +35,7 @@ function updateControls(): void {
   const ready = true;
   start.disabled = starting || Boolean(activeSession) || !ready;
   restart.disabled = starting || !activeSession;
+  pause.disabled = true;
 }
 
 function report(message: string): void {
@@ -170,7 +172,24 @@ fullscreen.addEventListener("click", () => {
   }
 });
 document.addEventListener("fullscreenchange", () => {
-  fullscreen.textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
+  fullscreen.textContent = document.fullscreenElement ? "⛶" : "⛶";
+  fullscreen.title = document.fullscreenElement ? "Exit full screen" : "Enter full screen";
+  fullscreen.setAttribute("aria-label", fullscreen.title);
+});
+canvas.addEventListener("click", () => {
+  canvas.focus();
+  try {
+    canvas.requestPointerLock?.();
+  } catch {
+    report("Pointer capture is unavailable in this browser.");
+  }
+});
+document.addEventListener("keydown", event => {
+  if (event.code === "ShiftRight" && document.pointerLockElement === canvas) {
+    document.exitPointerLock();
+    canvas.blur();
+    report("Keyboard and pointer capture released.");
+  }
 });
 report("Default PC110 firmware and Personaware-realbios.img are ready. Select a disk image to override it.");
 updateControls();

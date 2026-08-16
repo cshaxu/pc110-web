@@ -16,6 +16,7 @@ function assert(condition: unknown, message: string): asserts condition {
 assert(dependencies.includes("wasm32-unknown-emscripten"), "wasm32 must use its own libffi target triple.");
 assert(dependencies.includes("wasm64-unknown-emscripten"), "wasm64 must retain its own libffi target triple.");
 assert(dependencies.includes("emscripten-$wasm_variant.cross"), "Dependency cross files must be ABI-specific.");
+assert(dependencies.includes('host_venv/bin/python.exe'), "Dependency setup must support Git Bash virtual-environment layouts.");
 assert(configure.includes('--cpu="$wasm_variant"'), "QEMU configuration must select the explicit ABI.");
 assert(cleanVariant.includes('PC110_WEB_WASM_VARIANT="$variant"'), "Clean variant build must propagate the ABI explicitly.");
 assert(cleanVariant.includes('run-setup-build.sh" "$variant"'), "Clean variant build must use an ABI-named cache stage.");

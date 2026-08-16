@@ -94,6 +94,14 @@ if [[ ! -x "$ninja_bin" ]]; then
 fi
 
 "$host_python" -m venv "$host_venv"
+if [[ -x "$host_venv/Scripts/python.exe" ]]; then
+  host_venv_bin="$host_venv/Scripts"
+elif [[ -x "$host_venv/bin/python.exe" ]]; then
+  host_venv_bin="$host_venv/bin"
+else
+  echo "the host virtual environment did not provide Python" >&2
+  exit 69
+fi
 if [[ ! -f "$meson_wheel" ]]; then
   echo "the pinned Meson wheel is required at $meson_wheel" >&2
   exit 68
@@ -101,8 +109,11 @@ fi
 printf '%s  %s\n' \
   '52b34f4903b882df52ad0d533146d4b992c018ea77399f825579737672ae7b20' "$meson_wheel" \
   | sha256sum -c -
-"$host_venv/Scripts/python.exe" -m pip install --disable-pip-version-check --no-index "$meson_wheel"
-meson_bin="$host_venv/Scripts/meson.exe"
+"$host_venv_bin/python.exe" -m pip install --disable-pip-version-check --no-index "$meson_wheel"
+meson_bin="$host_venv_bin/meson.exe"
+if [[ ! -x "$meson_bin" ]]; then
+  meson_bin="$host_venv_bin/meson"
+fi
 pkgconf_windows=$(cygpath -w "$pkgconf_bin")
 pkgconf_adapter_windows=$(cygpath -w "$tools_dir/pkg-config.ps1")
 pkgconf_cmd_windows=$(cygpath -w "$tools_dir/pkg-config.cmd")

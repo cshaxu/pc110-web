@@ -5,18 +5,18 @@ set -euo pipefail
 # the same cache layout and source preparation contract, but their dependency
 # adapter is intentionally stopped until its native build is verified.
 stage=${1:?stage is required}
+if [[ "$stage" != "wasm64" ]]; then
+  echo "PC110 Web supports only the wasm64 build stage." >&2
+  exit 63
+fi
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
-wasm_variant=${PC110_WEB_WASM_VARIANT:-wasm64}
-case "$wasm_variant" in
-  wasm32|wasm64) ;;
-  *)
-    echo "unsupported WASM variant: $wasm_variant" >&2
-    exit 63
-    ;;
-esac
-
+wasm_variant=wasm64
+if [[ "${PC110_WEB_WASM_VARIANT:-wasm64}" != "wasm64" ]]; then
+  echo "PC110 Web supports only wasm64; wasm32 cannot run the QEMU system emulator." >&2
+  exit 63
+fi
 if [[ "$(uname -s)" != MINGW* && "$(uname -s)" != MSYS* ]]; then
   echo "Linux/macOS bootstrap is prepared, but its QEMU dependency build has not yet been validated."
   echo "Refusing to claim cross-platform compilation support before a native host regression is recorded."

@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('wasm32', 'wasm64')]
+    [ValidateSet('wasm64')]
     [string]$Variant,
     [Parameter(Mandatory = $true)]
     [string]$ArtifactDirectory,

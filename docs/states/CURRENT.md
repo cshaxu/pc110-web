@@ -3,7 +3,7 @@
 **Status: Active — M3 T5 wasm64 incremental build baseline.**
 The independent Windows-native clean build remains the verified baseline. M3
 T5 retains the verified wasm64 incremental build without changing PC110 runtime
-behavior or personal-media scope.
+behavior or personal-media scope. Browser delivery requires WebAssembly Memory64; Safari is unsupported until a released Safari version both implements it and passes PC110 browser evidence. See `design/BROWSER_COMPATIBILITY.md`.
 
 Current technical baseline: fork `cshaxu/pc110-qemu`, HEAD `bae390e` (2026-07-21). The native build script pins QEMU 11.0.2. QEMU 11.0.2 source has an Emscripten/`wasm64` path requiring `--enable-tcg-interpreter`; current Emscripten compatibility requires the explicit legacy detection flag `-DEMSCRIPTEN` for this baseline. The admitted local direction is Git Bash as a Windows-native POSIX host, not MSYS2, WSL, Docker, or remote execution. Git Bash Node.js 22/npm is the project runtime for TypeScript, tests, and local serving; Emscripten's bundled Node is only for Emscripten build tooling. Generated source, SDK, and probe outputs remain ignored.
 

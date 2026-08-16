@@ -1,13 +1,18 @@
-export type RuntimeAbi = "wasm32" | "wasm64";
+export type RuntimeAbi = "wasm64";
 
-export function selectRuntimeAbi(_userAgent: string): RuntimeAbi {
-  // QEMU's system emulator requires a 64-bit host address model. A compiled
-  // wasm32 artifact can load and draw its first frame, but fails immediately
-  // in the PC110 boot path. Keep the known-good wasm64 runtime authoritative
-  // until a full 32-bit-host port has runtime evidence.
+const memory64Probe = new Uint8Array([
+  0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+  0x05, 0x03, 0x01, 0x04, 0x00
+]);
+
+export function supportsMemory64(): boolean {
+  return typeof WebAssembly !== "undefined" && WebAssembly.validate(memory64Probe);
+}
+
+export function selectRuntimeAbi(): RuntimeAbi {
   return "wasm64";
 }
 
-export function runtimeArtifactPath(abi: RuntimeAbi): string {
-  return abi === "wasm64" ? "qemu-system-i386.js" : "wasm32/qemu-system-i386.js";
+export function runtimeArtifactPath(): string {
+  return "qemu-system-i386.js";
 }

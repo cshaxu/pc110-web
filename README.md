@@ -19,6 +19,7 @@ then applies the Web-owned patch series. Released runtime files belong in
 See [`docs/design/REPOSITORY_LAYOUT.md`](docs/design/REPOSITORY_LAYOUT.md) for
 the target layout and [`docs/etc/PC110_QEMU_DEPENDENCY.md`](docs/etc/PC110_QEMU_DEPENDENCY.md)
 for the dependency and provenance rules.
+See [`docs/design/BROWSER_COMPATIBILITY.md`](docs/design/BROWSER_COMPATIBILITY.md) for the Memory64 browser requirement and unsupported-platform policy.
 
 For the currently validated standalone emulator harness, run `npm run serve`
 from the repository root. See [`docs/development/LOCAL_BUILD.md`](docs/development/LOCAL_BUILD.md)

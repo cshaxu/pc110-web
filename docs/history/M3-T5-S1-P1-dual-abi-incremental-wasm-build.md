@@ -1,11 +1,18 @@
 # M3 T5 S1 P1: Dual-ABI Incremental WASM Build Optimization
 
-**State:** Active  
+**State:** Closed — superseded by wasm64-only delivery
 **Owner:** Web technical lead  
 **Original request:** Create an MTSP Task that optimizes the emulator build so
 that routine changes rebuild only affected QEMU targets, while supporting
 independent wasm32 and wasm64 builds.
 
+## Outcome and Supersession
+
+The incremental-build objective was achieved for wasm64. The proposed wasm32
+branch was later rejected by real PC110 boot evidence because QEMU's system
+emulator requires a 64-bit host address model. All live scripts and runtime
+selection are now wasm64-only. This record remains historical planning context;
+the authoritative browser policy is `design/BROWSER_COMPATIBILITY.md`.
 ## Objective
 
 Replace the fresh-stage-oriented build workflow with durable, variant-isolated

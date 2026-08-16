@@ -10,8 +10,7 @@
 | Closed | M0 Td S8 P1 integrated repository layout | `history/M0-Td-S8-P1-integrated-repository-layout.md` | Root governance and integrated target layout are current |
 | Verified | M3 T3 S1 P1 integrated runtime structure migration | `history/M3-T3-S1-P1-integrated-runtime-structure-migration.md` | Root type-check, emulator contract tests, and migrated harness serving |
 | Verified | M3 T4 S1 P1 Next.js application host | `history/M3-T4-S1-P1-nextjs-application-host.md` | Next production build and emulator contract tests |
-| Verified | M3 T5 S1 P1 dual-ABI incremental WASM build optimization | `history/M3-T5-S1-P1-dual-abi-incremental-wasm-build.md` | Variant contract, invalidation matrix, and implementation sequence are admitted |
-| Verified | M3 T5 S1 P2 wasm64 incremental artifact build | `history/M3-T5-S1-P2-wasm64-incremental-artifact-build.md` | Reuse a configured wasm64 Ninja graph; reject wasm32 until independently verified |
-| Closed — rejected | M3 T5 S2 P1 wasm32 Safari 26 compatibility path | `history/M3-T5-S2-P1-wasm32-safari26-compatibility.md` | QEMU system-emulator runtime requires a 64-bit host address model; wasm32 boot fails after the first frame |
+| Verified | M3 T5 S1 P1 wasm64 incremental WASM build optimization | `history/M3-T5-S1-P1-dual-abi-incremental-wasm-build.md` | wasm64 incremental contract and invalidation matrix are admitted |
+| Verified | M3 T5 S1 P2 wasm64 incremental artifact build | `history/M3-T5-S1-P2-wasm64-incremental-artifact-build.md` | Reuse the configured wasm64 Ninja graph and relink the artifact |
 
 Candidates are unnumbered. They must not begin implementation or occupy `CURRENT.md`.

@@ -14,7 +14,7 @@ paths.
 ## Command Contract
 
 ```text
-scripts/qemu-build/incremental-qemu-wasm-gitbash.sh wasm64 \
+scripts/qemu-build/incremental-qemu-wasm-gitbash.sh \
   .cache/emulator-wasm64-<candidate>
 ```
 
@@ -26,7 +26,7 @@ separate release action.
 
 ## Acceptance Evidence
 
-- The command rejects wasm32 and missing/mixed wasm64 inputs.
+- The command is wasm64-only and rejects missing or mixed wasm64 inputs.
 - Its script contract proves isolated source, dependency, sysroot, build, and
   record paths.
 - A controlled web-display source invalidation recompiles only its affected

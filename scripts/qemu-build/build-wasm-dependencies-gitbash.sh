@@ -10,23 +10,14 @@ work_dir=$1
 sysroot=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd)
-wasm_variant=${PC110_WEB_WASM_VARIANT:-wasm64}
-case "$wasm_variant" in
-  wasm64)
-    abi_cflags="-m64 -sMEMORY64=1"
-    abi_link_flags="-m64 -sMEMORY64=1"
-    libffi_host=wasm64-unknown-emscripten
-    ;;
-  wasm32)
-    abi_cflags=""
-    abi_link_flags=""
-    libffi_host=wasm32-unknown-emscripten
-    ;;
-  *)
-    echo "unsupported WASM variant: $wasm_variant" >&2
-    exit 65
-    ;;
-esac
+wasm_variant=wasm64
+if [[ "${PC110_WEB_WASM_VARIANT:-wasm64}" != "wasm64" ]]; then
+  echo "PC110 Web supports only wasm64; wasm32 cannot run the QEMU system emulator." >&2
+  exit 65
+fi
+abi_cflags="-m64 -sMEMORY64=1"
+abi_link_flags="-m64 -sMEMORY64=1"
+libffi_host=wasm64-unknown-emscripten
 pkgconf_bin=${PC110_WEB_PKGCONF:-/c/msys64/usr/bin/pkgconf.exe}
 make_bin=${PC110_WEB_MAKE:-/c/msys64/usr/bin/make.exe}
 ninja_version=1.12.1

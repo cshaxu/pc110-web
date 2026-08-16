@@ -7,7 +7,7 @@
     "build": "next build",
     "build:emulator": "tsc -p tsconfig.emulator.json",
     "typecheck": "tsc -p tsconfig.emulator.json --noEmit",
-    "test": "npm run typecheck && tsx tests/emulator/pc110-session-contract.spec.ts && tsx tests/emulator/emscripten-qemu-recovery.spec.ts && tsx tests/emulator/runtime-selector.spec.ts && tsx tests/qemu/web-display-pointer-input.spec.ts && tsx tests/qemu/emscripten-safari26-contract.spec.ts && tsx tests/qemu/incremental-wasm-build-contract.spec.ts && tsx tests/qemu/wasm-variant-build-contract.spec.ts",
+    "test": "npm run typecheck && tsx tests/emulator/pc110-session-contract.spec.ts && tsx tests/emulator/emscripten-qemu-recovery.spec.ts && tsx tests/emulator/runtime-selector.spec.ts && tsx tests/qemu/web-display-pointer-input.spec.ts && tsx tests/qemu/incremental-wasm-build-contract.spec.ts && tsx tests/qemu/wasm-variant-build-contract.spec.ts",
     "dev": "next dev",
     "start": "next start",
     "serve:harness": "node scripts/dev/serve.mjs",

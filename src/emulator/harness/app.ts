@@ -1,6 +1,6 @@
 import { createEmscriptenQemuBridge, type EmscriptenQemuFactory } from "../bridge/emscripten-qemu";
 import { extractPc110EasySetup, Pc110Session, type LocalAsset } from "../session/pc110-session";
-import { runtimeArtifactPath, selectRuntimeAbi } from "../bridge/runtime-selector";
+import { runtimeArtifactPath, selectRuntimeAbi, supportsMemory64 } from "../bridge/runtime-selector";
 
 const artifactRoot = new URL("/emulator/", window.location.origin);
 const localMediaRoot = new URL("/_pc110-local-media/", window.location.origin);
@@ -96,11 +96,14 @@ async function fetchLocalVerificationAsset(path: string, role: string): Promise<
 }
 
 async function loadModuleFactory(): Promise<{ moduleFactory: EmscriptenQemuFactory; runtimeRoot: URL }> {
+  if (!supportsMemory64()) {
+    throw new Error("This browser does not support WebAssembly Memory64, required by the PC110 QEMU runtime. Use Chrome or Edge 133+, or Firefox 134+. Safari is not supported yet.");
+  }
   // The Emscripten output is a runtime-selected public asset, not an npm
   // dependency. Keep its import outside Next's static module graph.
   const importRuntime = new Function("url", "return import(url);") as (url: string) => Promise<unknown>;
-  const abi = selectRuntimeAbi(navigator.userAgent);
-  const runtimeUrl = new URL(runtimeArtifactPath(abi), artifactRoot);
+  const abi = selectRuntimeAbi();
+  const runtimeUrl = new URL(runtimeArtifactPath(), artifactRoot);
   const runtimeRoot = new URL("./", runtimeUrl);
   report(`Selecting ${abi} QEMU runtime.`);
   const artifact = await importRuntime(runtimeUrl.href) as { default?: unknown };

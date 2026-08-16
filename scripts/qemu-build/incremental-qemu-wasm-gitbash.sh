@@ -1,24 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "usage: $0 <variant> <candidate-artifact-dir>" >&2
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 <candidate-artifact-dir>" >&2
   exit 64
 fi
 
-variant=$1
-artifact_dir=$2
+variant=wasm64
+artifact_dir=$1
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd -P)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
-
-case "$variant" in
-  wasm32|wasm64) ;;
-  *)
-    echo "unsupported WASM variant: $variant" >&2
-    exit 65
-    ;;
-esac
 
 deps_dir="$cache_dir/wasm-deps-$variant"
 sysroot_dir="$cache_dir/wasm-sysroot-$variant"

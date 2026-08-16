@@ -222,3 +222,4 @@ document.addEventListener("keydown", event => {
 });
 report("Default PC110 firmware and Personaware-realbios.img are ready. A disk image is optional and only overrides the default.");
 updateControls();
+window.setTimeout(() => start.click(), 0);

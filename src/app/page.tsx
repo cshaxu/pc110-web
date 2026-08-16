@@ -16,7 +16,6 @@ export default function HomePage() {
       <header className="masthead">
         <h1>PC110 Web</h1>
         <section className="controls" aria-label="PC110 player controls">
-          <label className="file-button" title="Choose a disk image to override the default"><span aria-hidden="true">📂</span><input id="disk" type="file" /><span className="sr-only">Choose disk image override</span></label>
           <button id="start" type="button" title="Play or resume" aria-label="Play or resume">▶️</button>
           <button id="pause" type="button" title="Pause (not yet available)" aria-label="Pause" disabled>⏸️</button>
           <button id="restart" type="button" title="Reset" aria-label="Reset" disabled>🔄</button>

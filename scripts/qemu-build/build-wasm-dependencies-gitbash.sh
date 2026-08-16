@@ -58,7 +58,14 @@ downloads_dir="$work_dir/downloads"
 source_cache_dir="$project_root/.cache/source-archives"
 tool_cache_dir="$project_root/.cache/tool-archives"
 manifest_dir="$work_dir/manifest"
-mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$source_cache_dir" "$tool_cache_dir" "$sysroot/lib/pkgconfig"
+temp_dir="$work_dir/tmp"
+em_cache_dir="$work_dir/em-cache"
+mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$temp_dir" "$em_cache_dir" "$source_cache_dir" "$tool_cache_dir" "$sysroot/lib/pkgconfig"
+temp_windows=$(cygpath -w "$temp_dir")
+export TMPDIR="$temp_dir"
+export TEMP="$temp_windows"
+export TMP="$temp_windows"
+export EM_CACHE="$em_cache_dir"
 
 # QEMU detects SDL through pkg-config. Emscripten supplies SDL2 as a link-time
 # port rather than a sysroot package, so publish the narrow descriptor that

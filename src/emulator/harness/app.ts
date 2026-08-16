@@ -99,10 +99,11 @@ async function loadModuleFactory(): Promise<{ moduleFactory: EmscriptenQemuFacto
   // The Emscripten output is a runtime-selected public asset, not an npm
   // dependency. Keep its import outside Next's static module graph.
   const importRuntime = new Function("url", "return import(url);") as (url: string) => Promise<unknown>;
-  const abi = selectRuntimeAbi(navigator.userAgent);
+  const requestedAbi = new URLSearchParams(window.location.search).get("runtime");
+  const abi = selectRuntimeAbi(navigator.userAgent, requestedAbi);
   const runtimeUrl = new URL(runtimeArtifactPath(abi), artifactRoot);
   const runtimeRoot = new URL("./", runtimeUrl);
-  report(`Selecting ${abi} QEMU runtime.`);
+  report(`Selecting ${abi} QEMU runtime${requestedAbi === abi ? " (requested)" : ""}.`);
   const artifact = await importRuntime(runtimeUrl.href) as { default?: unknown };
   if (typeof artifact.default !== "function") {
     throw new Error("The QEMU artifact did not export an Emscripten module factory.");

@@ -1,6 +1,7 @@
 export type RuntimeAbi = "wasm32" | "wasm64";
 
-export function selectRuntimeAbi(userAgent: string): RuntimeAbi {
+export function selectRuntimeAbi(userAgent: string, requestedAbi?: string | null): RuntimeAbi {
+  if (requestedAbi === "wasm32" || requestedAbi === "wasm64") return requestedAbi;
   const safari = /Version\/(\d+(?:\.\d+)?).*Safari\//.exec(userAgent);
   if (safari && Number.parseFloat(safari[1] ?? "0") >= 26) return "wasm32";
   return "wasm64";

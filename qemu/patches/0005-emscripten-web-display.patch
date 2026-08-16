@@ -15,8 +15,8 @@ Upstream baseline: QEMU v11.0.2 (e545d8bb7c3f).
 ---
  qapi/ui.json    |  1 +
  ui/meson.build  |  1 +
- ui/web-display.c | 263 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 268 insertions(+)
+ ui/web-display.c | 257 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 261 insertions(+)
 
 diff --git a/qapi/ui.json b/qapi/ui.json
 index 5a9cf44..62ffd96 100644
@@ -56,7 +56,7 @@ new file mode 100644
 index 0000000..f36a12e
 --- /dev/null
 +++ b/ui/web-display.c
-@@ -0,0 +1,263 @@
+@@ -0,0 +1,257 @@
 +/*
 + * QEMU browser canvas display backend.
 + *
@@ -74,9 +74,6 @@ index 0000000..f36a12e
 +#include <emscripten/html5.h>
 +
 +static pthread_t web_display_thread;
-+static int web_display_last_x;
-+static int web_display_last_y;
-+static bool web_display_have_pointer;
 +
 +static QKeyCode web_display_qcode(const char *code)
 +{
@@ -196,22 +193,19 @@ index 0000000..f36a12e
 +    QemuConsole *con = opaque;
 +    int width = qemu_console_get_width(con, 0);
 +    int height = qemu_console_get_height(con, 0);
-+    int x = event->targetX;
-+    int y = event->targetY;
-+
-+    if (x < 0 || y < 0 || x >= width || y >= height) {
-+        return false;
-+    }
 +    if (qemu_input_is_absolute(con)) {
++        int x = event->targetX;
++        int y = event->targetY;
++
++        if (x < 0 || y < 0 || x >= width || y >= height) {
++            return false;
++        }
 +        qemu_input_queue_abs(con, INPUT_AXIS_X, x, 0, width);
 +        qemu_input_queue_abs(con, INPUT_AXIS_Y, y, 0, height);
-+    } else if (web_display_have_pointer) {
-+        qemu_input_queue_rel(con, INPUT_AXIS_X, x - web_display_last_x);
-+        qemu_input_queue_rel(con, INPUT_AXIS_Y, y - web_display_last_y);
++    } else if (event_type == EMSCRIPTEN_EVENT_MOUSEMOVE) {
++        qemu_input_queue_rel(con, INPUT_AXIS_X, event->movementX);
++        qemu_input_queue_rel(con, INPUT_AXIS_Y, event->movementY);
 +    }
-+    web_display_last_x = x;
-+    web_display_last_y = y;
-+    web_display_have_pointer = true;
 +
 +    if (event_type == EMSCRIPTEN_EVENT_MOUSEDOWN ||
 +        event_type == EMSCRIPTEN_EVENT_MOUSEUP) {

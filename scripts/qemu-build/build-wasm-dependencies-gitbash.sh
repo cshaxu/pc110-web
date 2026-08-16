@@ -9,7 +9,7 @@ fi
 work_dir=$1
 sysroot=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-project_root=$(cd "$script_dir/.." && pwd)
+project_root=$(cd "$script_dir/../.." && pwd)
 pkgconf_bin=${PC110_WEB_PKGCONF:-/c/msys64/usr/bin/pkgconf.exe}
 make_bin=${PC110_WEB_MAKE:-/c/msys64/usr/bin/make.exe}
 ninja_version=1.12.1
@@ -33,12 +33,15 @@ source "$script_dir/gitbash-emsdk-env.sh"
 
 host_python=${PC110_WEB_HOST_PYTHON:-"$(command -v python)"}
 host_venv="$work_dir/host-venv"
+meson_wheel="$project_root/.cache/python-wheels/meson-1.5.0-py3-none-any.whl"
 tools_dir="$work_dir/tools"
 sources_dir="$work_dir/sources"
 builds_dir="$work_dir/builds"
 downloads_dir="$work_dir/downloads"
+source_cache_dir="$project_root/.cache/source-archives"
+tool_cache_dir="$project_root/.cache/tool-archives"
 manifest_dir="$work_dir/manifest"
-mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$sysroot/lib/pkgconfig"
+mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$source_cache_dir" "$tool_cache_dir" "$sysroot/lib/pkgconfig"
 
 # QEMU detects SDL through pkg-config. Emscripten supplies SDL2 as a link-time
 # port rather than a sysroot package, so publish the narrow descriptor that
@@ -55,10 +58,15 @@ Cflags: -sUSE_SDL=2
 EOF
 
 ninja_bin=${PC110_WEB_NINJA:-"$tools_dir/ninja.exe"}
-if [[ -z "${PC110_WEB_NINJA:-}" ]]; then
+if [[ ! -x "$ninja_bin" ]]; then
   ninja_archive="$downloads_dir/ninja-win.zip"
-  curl --fail --location --retry 3 --output "$ninja_archive" \
-    "https://github.com/ninja-build/ninja/releases/download/v$ninja_version/ninja-win.zip"
+  if [[ -f "$tool_cache_dir/ninja-win.zip" ]]; then
+    cp "$tool_cache_dir/ninja-win.zip" "$ninja_archive"
+  else
+    curl --fail --location --retry 3 --output "$ninja_archive" \
+      "https://github.com/ninja-build/ninja/releases/download/v$ninja_version/ninja-win.zip"
+    cp "$ninja_archive" "$tool_cache_dir/ninja-win.zip"
+  fi
   sha256sum "$ninja_archive" >> "$manifest_dir/SHA256SUMS"
   unzip -q "$ninja_archive" -d "$tools_dir"
 fi
@@ -69,7 +77,14 @@ if [[ ! -x "$ninja_bin" ]]; then
 fi
 
 "$host_python" -m venv "$host_venv"
-"$host_venv/Scripts/python.exe" -m pip install --disable-pip-version-check "meson==1.5.0"
+if [[ ! -f "$meson_wheel" ]]; then
+  echo "the pinned Meson wheel is required at $meson_wheel" >&2
+  exit 68
+fi
+printf '%s  %s\n' \
+  '52b34f4903b882df52ad0d533146d4b992c018ea77399f825579737672ae7b20' "$meson_wheel" \
+  | sha256sum -c -
+"$host_venv/Scripts/python.exe" -m pip install --disable-pip-version-check --no-index "$meson_wheel"
 meson_bin="$host_venv/Scripts/meson.exe"
 pkgconf_windows=$(cygpath -w "$pkgconf_bin")
 pkgconf_adapter_windows=$(cygpath -w "$tools_dir/pkg-config.ps1")
@@ -159,7 +174,14 @@ download_and_extract() {
   local url=$2
   local destination=$3
   local archive="$downloads_dir/$name"
-  curl --fail --location --retry 3 --output "$archive" "$url"
+  if [[ ! -f "$archive" ]]; then
+    if [[ -f "$source_cache_dir/$name" ]]; then
+      cp "$source_cache_dir/$name" "$archive"
+    else
+      curl --fail --location --retry 3 --output "$archive" "$url"
+      cp "$archive" "$source_cache_dir/$name"
+    fi
+  fi
   sha256sum "$archive" >> "$manifest_dir/SHA256SUMS"
   mkdir -p "$destination"
   if [[ "$name" == glib-* ]]; then

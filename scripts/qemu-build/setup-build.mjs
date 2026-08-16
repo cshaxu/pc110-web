@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const projectDir = path.resolve(scriptDir, '..');
+const projectDir = path.resolve(scriptDir, '..', '..');
 const cacheDir = process.env.PC110_WEB_CACHE_DIR ?? path.join(projectDir, '.cache');
 const emsdkDir = path.join(cacheDir, 'emsdk');
 const stage = process.env.PC110_WEB_BUILD_STAGE ?? 'portable';

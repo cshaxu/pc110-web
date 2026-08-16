@@ -20,11 +20,17 @@ case "$variant" in
     ;;
 esac
 
-deps_dir="$cache_dir/wasm-deps-$variant"
-sysroot_dir="$cache_dir/wasm-sysroot-$variant"
-source_dir="$cache_dir/pc110-wasm-src-$variant"
-build_dir="$cache_dir/pc110-wasm-build-$variant"
-record_dir="$cache_dir/pc110-wasm-record-$variant"
+deps_dir=${PC110_WEB_WASM_DEPENDENCY_WORK_DIR:-"$cache_dir/wasm-deps-$variant"}
+sysroot_dir=${PC110_WEB_WASM_SYSROOT:-"$cache_dir/wasm-sysroot-$variant"}
+source_dir=${PC110_WEB_WASM_SOURCE_DIR:-"$cache_dir/pc110-wasm-src-$variant"}
+build_dir=${PC110_WEB_WASM_BUILD_DIR:-"$cache_dir/pc110-wasm-build-$variant"}
+record_dir=${PC110_WEB_WASM_RECORD_DIR:-"$cache_dir/pc110-wasm-record-$variant"}
+
+deps_dir=$(cd "$deps_dir" && pwd -P)
+sysroot_dir=$(cd "$sysroot_dir" && pwd -P)
+source_dir=$(cd "$source_dir" && pwd -P)
+build_dir=$(cd "$build_dir" && pwd -P)
+record_dir=$(cd "$record_dir" && pwd -P)
 
 artifact_parent=$(cd "$(dirname "$artifact_dir")" && pwd -P)
 artifact_dir="$artifact_parent/$(basename "$artifact_dir")"

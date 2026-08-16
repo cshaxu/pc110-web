@@ -10,6 +10,11 @@ work_dir=$1
 sysroot=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd)
+mkdir -p "$(dirname "$work_dir")" "$(dirname "$sysroot")"
+work_parent=$(cd "$(dirname "$work_dir")" && pwd -P)
+sysroot_parent=$(cd "$(dirname "$sysroot")" && pwd -P)
+work_dir="$work_parent/$(basename "$work_dir")"
+sysroot="$sysroot_parent/$(basename "$sysroot")"
 wasm_variant=${PC110_WEB_WASM_VARIANT:-wasm64}
 case "$wasm_variant" in
   wasm64)
@@ -95,6 +100,8 @@ if [[ ! -x "$ninja_bin" ]]; then
   sha256sum "$ninja_archive" >> "$manifest_dir/SHA256SUMS"
   if command -v unzip >/dev/null 2>&1; then
     unzip -q "$ninja_archive" -d "$tools_dir"
+  elif command -v bsdtar >/dev/null 2>&1; then
+    bsdtar -xf "$ninja_archive" -C "$tools_dir"
   else
     archive_windows=$(cygpath -w "$ninja_archive")
     tools_windows=$(cygpath -w "$tools_dir")
@@ -251,20 +258,77 @@ popd >/dev/null
 
 download_and_extract "libffi-$libffi_version.tar.gz" \
   "https://github.com/libffi/libffi/releases/download/v$libffi_version/libffi-$libffi_version.tar.gz" "$sources_dir/libffi"
-mkdir libffi
-pushd libffi >/dev/null
-"$sources_dir/libffi/configure" --host="$libffi_host" --prefix="$sysroot" \
-  --enable-static --disable-shared --disable-dependency-tracking --disable-builddir \
-  --disable-multi-os-directory --disable-raw-api --disable-docs
-"$make_bin" -j"$build_jobs"
-# libffi's generated man-page target is not portable to Git Bash. Install the
-# target library, headers, and pkg-config metadata explicitly instead.
-"$make_bin" install-exec-am
-"$make_bin" install-pkgconfigDATA
-"$make_bin" -C include install
-popd >/dev/null
+if [[ "$wasm_variant" == wasm32 ]]; then
+  # libffi has a native Emscripten wasm backend.  Its Autoconf probe reaches a
+  # known non-terminating command-substitution path under Windows/MSYS2, even
+  # though compiling that backend itself is sound.  Build exactly the selected
+  # wasm32 sources and generate the small target-specific headers directly.
+  # This deliberately avoids introducing host-generated state into the wasm32
+  # cache, which keeps a clean build repeatable.
+  libffi_build="$builds_dir/libffi"
+  libffi_include="$libffi_build/include"
+  mkdir -p "$libffi_build/obj" "$libffi_include"
+  cp "$sources_dir/libffi/src/wasm/ffitarget.h" "$libffi_include/ffitarget.h"
+  sed \
+    -e "s/@VERSION@/$libffi_version/g" \
+    -e 's/@TARGET@/wasm32/g' \
+    -e 's/@HAVE_LONG_DOUBLE@/1/g' \
+    -e 's/@FFI_VERSION_STRING@/3.5.2/g' \
+    -e 's/@FFI_VERSION_NUMBER@/30502/g' \
+    -e 's/@FFI_EXEC_TRAMPOLINE_TABLE@/0/g' \
+    "$sources_dir/libffi/include/ffi.h.in" > "$libffi_include/ffi.h"
+  sed \
+    -e 's/^#undef FFI_NO_RAW_API$/#define FFI_NO_RAW_API 1/' \
+    -e 's/^#undef HAVE_ALLOCA_H$/#define HAVE_ALLOCA_H 1/' \
+    -e 's/^#undef HAVE_HIDDEN_VISIBILITY_ATTRIBUTE$/#define HAVE_HIDDEN_VISIBILITY_ATTRIBUTE 1/' \
+    -e 's/^#undef HAVE_LONG_DOUBLE$/#define HAVE_LONG_DOUBLE 1/' \
+    -e 's/^#undef HAVE_MEMCPY$/#define HAVE_MEMCPY 1/' \
+    -e 's/^#undef HAVE_STDINT_H$/#define HAVE_STDINT_H 1/' \
+    -e 's/^#undef HAVE_STDLIB_H$/#define HAVE_STDLIB_H 1/' \
+    -e 's/^#undef HAVE_STRING_H$/#define HAVE_STRING_H 1/' \
+    -e 's/^#undef STDC_HEADERS$/#define STDC_HEADERS 1/' \
+    "$sources_dir/libffi/fficonfig.h.in" > "$libffi_build/fficonfig.h"
+  libffi_saved_emmaken=${EMMAKEN_JUST_CONFIGURE:-}
+  unset EMMAKEN_JUST_CONFIGURE
+  for libffi_source in src/prep_cif.c src/types.c src/raw_api.c src/java_raw_api.c src/closures.c src/wasm/ffi.c; do
+    libffi_object="$libffi_build/obj/$(basename "${libffi_source%.c}").o"
+    emcc $CFLAGS -DHAVE_CONFIG_H -I"$libffi_build" -I"$libffi_include" \
+      -I"$sources_dir/libffi/include" -I"$sources_dir/libffi/src" \
+      -c "$sources_dir/libffi/$libffi_source" -o "$libffi_object"
+  done
+  emar rcs "$sysroot/lib/libffi.a" "$libffi_build"/obj/*.o
+  if [[ -n "$libffi_saved_emmaken" ]]; then
+    export EMMAKEN_JUST_CONFIGURE="$libffi_saved_emmaken"
+  fi
+  cp "$libffi_include/ffi.h" "$libffi_include/ffitarget.h" "$sysroot/include/"
+  cat > "$sysroot/lib/pkgconfig/libffi.pc" <<EOF
+prefix=$sysroot
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
 
-cross_c_args="'-O3', '-pthread', '-DWASM_BIGINT'"
+Name: libffi
+Description: Library supporting Foreign Function Interfaces
+Version: $libffi_version
+Libs: -L\${libdir} -lffi
+Cflags: -I\${includedir}
+EOF
+else
+  mkdir libffi
+  pushd libffi >/dev/null
+  "$sources_dir/libffi/configure" --host="$libffi_host" --prefix="$sysroot" \
+    --enable-static --disable-shared --disable-dependency-tracking --disable-builddir \
+    --disable-multi-os-directory --disable-raw-api --disable-docs
+  "$make_bin" -j"$build_jobs"
+  # libffi's generated man-page target is not portable to Git Bash. Install the
+  # target library, headers, and pkg-config metadata explicitly instead.
+  "$make_bin" install-exec-am
+  "$make_bin" install-pkgconfigDATA
+  "$make_bin" -C include install
+  popd >/dev/null
+fi
+
+cross_c_args="'-O3', '-pthread', '-DWASM_BIGINT', '-Wno-incompatible-function-pointer-types', '-Wno-incompatible-pointer-types'"
 cross_link_args="'-sWASM_BIGINT', '-sASYNCIFY=1', '-pthread', '-L$sysroot_windows_slash/lib'"
 if [[ "$wasm_variant" == wasm64 ]]; then
   cross_c_args="'-O3', '-m64', '-sMEMORY64=1', '-pthread', '-DWASM_BIGINT'"
@@ -340,23 +404,45 @@ popd >/dev/null
 
 download_and_extract "glib-$glib_version.tar.xz" \
   "https://download.gnome.org/sources/glib/2.84/glib-$glib_version.tar.xz" "$sources_dir/glib"
+# GLib only performs its exact size_t typedef probe for GCC and Clang.  emcc
+# identifies itself as Emscripten, so wasm32 would otherwise select unsigned
+# int solely because it has the same width as size_t; Emscripten uses unsigned
+# long for size_t.  Treat its Clang frontend as Clang for this compile-only
+# probe so GLib's public gsize typedef matches the target ABI.
+sed -i "s/cc.get_id() == 'gcc' or cc.get_id() == 'clang'/cc.get_id() == 'gcc' or cc.get_id() == 'clang' or cc.get_id() == 'emscripten'/" \
+  "$sources_dir/glib/meson.build"
 "$meson_bin" setup "$builds_dir/glib" "$sources_dir/glib" --prefix="$sysroot" \
   --native-file="$work_dir/host-tools.native" --cross-file="$work_dir/emscripten-$wasm_variant.cross" --default-library=static --buildtype=release \
   -Dselinux=disabled -Dxattr=false -Dlibmount=disabled -Dnls=disabled -Dsysprof=disabled -Dintrospection=disabled \
   -Dtests=false -Dglib_debug=disabled -Dglib_assert=false -Dglib_checks=false
 sed -i -E '/#define HAVE_POSIX_SPAWN 1/d' "$builds_dir/glib/config.h"
 sed -i -E '/#define HAVE_PTHREAD_GETNAME_NP 1/d' "$builds_dir/glib/config.h"
-# GLib 2.84 emits GDB auto-load destinations containing the Windows drive
-# prefix. Meson cannot create those optional debug-script directories on this
-# host, although the static libraries, headers and pkg-config files have
-# already installed. Treat precisely that tail failure as non-fatal only after
-# verifying the build inputs QEMU consumes are present.
-if ! "$meson_bin" install -C "$builds_dir/glib"; then
-  if [[ ! -f "$sysroot/lib/libglib-2.0.a" || ! -f "$sysroot/lib/pkgconfig/glib-2.0.pc" || ! -f "$sysroot/include/glib-2.0/glib.h" ]]; then
-    echo "GLib installation did not produce the required static development files" >&2
-    exit 70
-  fi
-  echo "Ignored Windows-only GLib GDB auto-load installation failure after verifying static development files."
+# QEMU consumes GLib's core, gmodule, and gthread static targets. Building
+# every installable GLib component also pulls in GIO and its optional host
+# integrations, which are neither needed by this configuration nor portable
+# to this Emscripten target. Install the exact development subset explicitly.
+"$ninja_bin" -C "$builds_dir/glib" \
+  glib/libglib-2.0.a gmodule/libgmodule-2.0.a gthread/libgthread-2.0.a
+mkdir -p "$sysroot/include/glib-2.0/glib/deprecated" "$sysroot/include/glib-2.0/gmodule" \
+  "$sysroot/lib/glib-2.0/include" "$sysroot/lib/pkgconfig"
+cp "$sources_dir/glib/glib/"*.h "$sysroot/include/glib-2.0/glib/"
+cp "$sources_dir/glib/glib/deprecated/"*.h "$sysroot/include/glib-2.0/glib/deprecated/"
+cp "$sources_dir/glib/gmodule/"*.h "$sysroot/include/glib-2.0/gmodule/"
+cp "$sources_dir/glib/gmodule/gmodule.h" "$sysroot/include/glib-2.0/"
+cp "$builds_dir/glib/glib/gversionmacros.h" "$builds_dir/glib/glib/glib-visibility.h" \
+  "$sysroot/include/glib-2.0/glib/"
+cp "$builds_dir/glib/gmodule/gmodule-visibility.h" "$sysroot/include/glib-2.0/gmodule/"
+cp "$builds_dir/glib/glib/glibconfig.h" "$sysroot/lib/glib-2.0/include/"
+cp "$builds_dir/glib/glib/libglib-2.0.a" "$builds_dir/glib/gmodule/libgmodule-2.0.a" \
+  "$builds_dir/glib/gthread/libgthread-2.0.a" "$sysroot/lib/"
+cp "$builds_dir/glib/meson-private/glib-2.0.pc" \
+  "$builds_dir/glib/meson-private/gmodule-export-2.0.pc" \
+  "$builds_dir/glib/meson-private/gmodule-no-export-2.0.pc" \
+  "$builds_dir/glib/meson-private/gmodule-2.0.pc" \
+  "$builds_dir/glib/meson-private/gthread-2.0.pc" "$sysroot/lib/pkgconfig/"
+if [[ ! -f "$sysroot/lib/libglib-2.0.a" || ! -f "$sysroot/lib/pkgconfig/glib-2.0.pc" || ! -f "$sysroot/include/glib-2.0/glib.h" ]]; then
+  echo "GLib installation did not produce the required static development files" >&2
+  exit 70
 fi
 
 # Static dependencies need to propagate their pthread ABI requirement, but an

@@ -1,0 +1,25 @@
+From: PC110 Web <pc110-web@example.invalid>
+Subject: [PATCH] emscripten: avoid mismatched GLib length pointer on wasm32
+
+On Emscripten wasm32, QEMU's size_t and GLib's gsize have equal widths but
+different C typedefs. The procfs helper does not consume the returned length,
+so omit it rather than passing an incompatible pointer.
+
+---
+ util/oslib-posix.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/util/oslib-posix.c b/util/oslib-posix.c
+--- a/util/oslib-posix.c
++++ b/util/oslib-posix.c
+@@ -696,9 +696,8 @@ char *qemu_get_pid_name(pid_t pid)
+ #else
+     /* Assume a system with reasonable procfs */
+     char *pid_path;
+-    size_t len;
+ 
+     pid_path = g_strdup_printf("/proc/%d/cmdline", pid);
+-    g_file_get_contents(pid_path, &name, &len, NULL);
++    g_file_get_contents(pid_path, &name, NULL, NULL);
+     g_free(pid_path);
+ #endif

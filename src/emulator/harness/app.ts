@@ -73,8 +73,8 @@ async function readAsset(input: HTMLInputElement, role: string): Promise<LocalAs
   return { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) };
 }
 
-async function fetchRuntimeFile(path: string): Promise<Uint8Array> {
-  const response = await fetch(new URL(path, artifactRoot));
+async function fetchRuntimeFile(path: string, runtimeRoot: URL): Promise<Uint8Array> {
+  const response = await fetch(new URL(path, runtimeRoot));
   if (!response.ok) {
     throw new Error(`Required QEMU runtime file is unavailable: ${path}`);
   }
@@ -95,17 +95,19 @@ async function fetchLocalVerificationAsset(path: string, role: string): Promise<
   return { name: path.split("/").at(-1) ?? role, bytes: new Uint8Array(await response.arrayBuffer()) };
 }
 
-async function loadModuleFactory(): Promise<EmscriptenQemuFactory> {
+async function loadModuleFactory(): Promise<{ moduleFactory: EmscriptenQemuFactory; runtimeRoot: URL }> {
   // The Emscripten output is a runtime-selected public asset, not an npm
   // dependency. Keep its import outside Next's static module graph.
   const importRuntime = new Function("url", "return import(url);") as (url: string) => Promise<unknown>;
   const abi = selectRuntimeAbi(navigator.userAgent);
+  const runtimeUrl = new URL(runtimeArtifactPath(abi), artifactRoot);
+  const runtimeRoot = new URL("./", runtimeUrl);
   report(`Selecting ${abi} QEMU runtime.`);
-  const artifact = await importRuntime(new URL(runtimeArtifactPath(abi), artifactRoot).href) as { default?: unknown };
+  const artifact = await importRuntime(runtimeUrl.href) as { default?: unknown };
   if (typeof artifact.default !== "function") {
     throw new Error("The QEMU artifact did not export an Emscripten module factory.");
   }
-  return artifact.default as EmscriptenQemuFactory;
+  return { moduleFactory: artifact.default as EmscriptenQemuFactory, runtimeRoot };
 }
 
 async function startPc110(): Promise<void> {
@@ -115,9 +117,9 @@ async function startPc110(): Promise<void> {
   updateControls();
   report("Loading PC110 runtime…");
   try {
-    const moduleFactory = await loadModuleFactory();
+    const { moduleFactory, runtimeRoot } = await loadModuleFactory();
     report("PC110 runtime module loaded.");
-    const vgaBios = await fetchRuntimeFile("pc-bios/vgabios-stdvga.bin");
+    const vgaBios = await fetchRuntimeFile("pc-bios/vgabios-stdvga.bin", runtimeRoot);
     report("PC110 VGA BIOS loaded.");
     const launchFiles = await Promise.all([
       fetchDefaultFirmware("/pc110/firmware/pc110_bios.bin", "BIOS"),
@@ -137,7 +139,7 @@ async function startPc110(): Promise<void> {
     };
     const bridge = createEmscriptenQemuBridge(
       moduleFactory,
-      path => new URL(path, artifactRoot).href,
+      path => new URL(path, runtimeRoot).href,
       report,
       { "/qemu-pc-bios/vgabios-stdvga.bin": vgaBios },
       restoreAfterRuntimeFailure

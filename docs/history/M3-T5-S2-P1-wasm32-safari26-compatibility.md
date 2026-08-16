@@ -15,11 +15,37 @@ browser compatibility floor for the generated Emscripten browser module.
 - wasm32 is a distinct ABI with its own source, dependency sysroot, Meson/Ninja
   build directory, configuration record, and candidate artifact.
 - wasm32 does not reuse wasm64 caches or claim compatibility below Safari 26.0.
-- Runtime variant selection remains a later, explicit policy task; this Part
-  proves build isolation and artifact viability only.
+- Safari 26.0 selects the separately deployed wasm32 runtime; other browsers
+  retain wasm64 as the default.
 
 ## Acceptance Evidence
 
 - The Safari target flag has a focused script-level contract test.
 - wasm32 performs an independent clean configuration and artifact build.
 - wasm32 module import and browser boot are recorded independently from wasm64.
+
+## Progress Record
+
+The Windows-native Git Bash route completed a distinct wasm32 configuration
+and full QEMU build. The resulting browser artifacts were promoted to
+`public/emulator/wasm32/`, including the matching VGA BIOS. The wasm32 output
+is 29,599,731 bytes and is accompanied by `SHA256SUMS`.
+
+The build discovered two upstream portability assumptions which are retained as
+reviewable QEMU patches: QEMU's generic 32-bit-host guard now permits only the
+explicit Emscripten route, and an unused GLib output-length pointer no longer
+uses mismatched same-width typedefs. The dependency script also asks GLib to
+perform its Clang-style `size_t` typedef probe for emcc, so future clean builds
+produce an ABI-correct `gsize` declaration.
+
+An immediate repeat through `incremental-qemu-wasm-gitbash.sh wasm32` produced
+the complete candidate artifact while Ninja ran only the normal version-header
+generator. It recompiled no QEMU C object and rebuilt no dependency.
+
+The promoted public artifact passed `sha256sum -c SHA256SUMS`; Emscripten's
+bundled Node 24.19.0 imported its ES module and confirmed the default module
+factory export.
+
+## Remaining Acceptance Evidence
+
+- Boot the deployed runtime in Safari 26.0 and exercise display and input.

@@ -10,5 +10,6 @@
 | Closed | M0 Td S8 P1 integrated repository layout | `history/M0-Td-S8-P1-integrated-repository-layout.md` | Root governance and integrated target layout are current |
 | Verified | M3 T3 S1 P1 integrated runtime structure migration | `history/M3-T3-S1-P1-integrated-runtime-structure-migration.md` | Root type-check, emulator contract tests, and migrated harness serving |
 | Verified | M3 T4 S1 P1 Next.js application host | `history/M3-T4-S1-P1-nextjs-application-host.md` | Next production build and emulator contract tests |
+| Active | M3 T5 S1 P1 dual-ABI incremental WASM build optimization | `history/M3-T5-S1-P1-dual-abi-incremental-wasm-build.md` | Variant contract, invalidation matrix, and implementation sequence are admitted; wasm64 incremental implementation is next |
 
 Candidates are unnumbered. They must not begin implementation or occupy `CURRENT.md`.

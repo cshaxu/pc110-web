@@ -12,7 +12,10 @@ $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $msysBash = 'C:\msys64\usr\bin\bash.exe'
 if (-not (Test-Path -LiteralPath $msysBash)) { throw 'MSYS2 bash was not found at C:\msys64\usr\bin\bash.exe.' }
 
-$relativeArtifact = [IO.Path]::GetRelativePath($projectRoot, [IO.Path]::GetFullPath($ArtifactDirectory)).Replace('\', '/')
+$artifactFullPath = [IO.Path]::GetFullPath($ArtifactDirectory)
+$projectPrefix = "$projectRoot\"
+if (-not $artifactFullPath.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'ArtifactDirectory must remain below the repository root.' }
+$relativeArtifact = $artifactFullPath.Substring($projectPrefix.Length).Replace('\', '/')
 if (-not $relativeArtifact.StartsWith('.cache/')) { throw 'ArtifactDirectory must remain below the repository .cache directory.' }
 
 $env:MSYSTEM = 'UCRT64'

@@ -10,6 +10,23 @@ work_dir=$1
 sysroot=$2
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd)
+wasm_variant=${PC110_WEB_WASM_VARIANT:-wasm64}
+case "$wasm_variant" in
+  wasm64)
+    abi_cflags="-m64 -sMEMORY64=1"
+    abi_link_flags="-m64 -sMEMORY64=1"
+    libffi_host=wasm64-unknown-emscripten
+    ;;
+  wasm32)
+    abi_cflags=""
+    abi_link_flags=""
+    libffi_host=wasm32-unknown-emscripten
+    ;;
+  *)
+    echo "unsupported WASM variant: $wasm_variant" >&2
+    exit 65
+    ;;
+esac
 pkgconf_bin=${PC110_WEB_PKGCONF:-/c/msys64/usr/bin/pkgconf.exe}
 make_bin=${PC110_WEB_MAKE:-/c/msys64/usr/bin/make.exe}
 ninja_version=1.12.1
@@ -165,9 +182,9 @@ export GREP=grep
 export EGREP=egrep
 export FGREP=fgrep
 export MKDIR_P='mkdir -p'
-export CFLAGS='-O3 -m64 -sMEMORY64=1 -pthread -DWASM_BIGINT'
+export CFLAGS="-O3 ${abi_cflags:+$abi_cflags }-pthread -DWASM_BIGINT"
 export CXXFLAGS="$CFLAGS"
-export LDFLAGS="-m64 -sMEMORY64=1 -sWASM_BIGINT -sASYNCIFY=1 -pthread -L$sysroot/lib"
+export LDFLAGS="${abi_link_flags:+$abi_link_flags }-sWASM_BIGINT -sASYNCIFY=1 -pthread -L$sysroot/lib"
 
 download_and_extract() {
   local name=$1
@@ -211,7 +228,7 @@ download_and_extract "libffi-$libffi_version.tar.gz" \
   "https://github.com/libffi/libffi/releases/download/v$libffi_version/libffi-$libffi_version.tar.gz" "$sources_dir/libffi"
 mkdir libffi
 pushd libffi >/dev/null
-"$sources_dir/libffi/configure" --host=wasm64-unknown-emscripten --prefix="$sysroot" \
+"$sources_dir/libffi/configure" --host="$libffi_host" --prefix="$sysroot" \
   --enable-static --disable-shared --disable-dependency-tracking --disable-builddir \
   --disable-multi-os-directory --disable-raw-api --disable-docs
 "$make_bin" -j"$(nproc)"
@@ -222,11 +239,17 @@ pushd libffi >/dev/null
 "$make_bin" -C include install
 popd >/dev/null
 
-cat > "$work_dir/emscripten-wasm64.cross" <<EOF
+cross_c_args="'-O3', '-pthread', '-DWASM_BIGINT'"
+cross_link_args="'-sWASM_BIGINT', '-sASYNCIFY=1', '-pthread', '-L$sysroot_windows_slash/lib'"
+if [[ "$wasm_variant" == wasm64 ]]; then
+  cross_c_args="'-O3', '-m64', '-sMEMORY64=1', '-pthread', '-DWASM_BIGINT'"
+  cross_link_args="'-m64', '-sMEMORY64=1', $cross_link_args"
+fi
+cat > "$work_dir/emscripten-$wasm_variant.cross" <<EOF
 [host_machine]
 system = 'emscripten'
-cpu_family = 'wasm64'
-cpu = 'wasm64'
+cpu_family = '$wasm_variant'
+cpu = '$wasm_variant'
 endian = 'little'
 
 [binaries]
@@ -240,16 +263,16 @@ pkgconfig = ['$pkgconf_cmd_windows', '--static']
 needs_exe_wrapper = true
 
 [built-in options]
-c_args = ['-O3', '-m64', '-sMEMORY64=1', '-pthread', '-DWASM_BIGINT']
-cpp_args = ['-O3', '-m64', '-sMEMORY64=1', '-pthread', '-DWASM_BIGINT']
-c_link_args = ['-m64', '-sMEMORY64=1', '-sWASM_BIGINT', '-sASYNCIFY=1', '-pthread', '-L$sysroot_windows_slash/lib']
-cpp_link_args = ['-m64', '-sMEMORY64=1', '-sWASM_BIGINT', '-sASYNCIFY=1', '-pthread', '-L$sysroot_windows_slash/lib']
+c_args = [$cross_c_args]
+cpp_args = [$cross_c_args]
+c_link_args = [$cross_link_args]
+cpp_link_args = [$cross_link_args]
 EOF
 
 download_and_extract "pixman-$pixman_version.tar.gz" \
   "https://cairographics.org/releases/pixman-$pixman_version.tar.gz" "$sources_dir/pixman"
 "$meson_bin" setup "$builds_dir/pixman" "$sources_dir/pixman" --prefix="$sysroot" \
-  --native-file="$work_dir/host-tools.native" --cross-file="$work_dir/emscripten-wasm64.cross" --default-library=static --buildtype=release \
+  --native-file="$work_dir/host-tools.native" --cross-file="$work_dir/emscripten-$wasm_variant.cross" --default-library=static --buildtype=release \
   -Dtests=disabled -Ddemos=disabled
 "$meson_bin" install -C "$builds_dir/pixman"
 
@@ -274,8 +297,8 @@ pushd "$builds_dir/pcre2" >/dev/null
 # irrelevant to this static library and its optimizer cannot process wasm64
 # probe outputs on this Windows-hosted Emscripten version.
 pcre2_saved_ldflags=$LDFLAGS
-export LDFLAGS="-m64 -sMEMORY64=1 -sWASM_BIGINT -pthread -L$sysroot/lib"
-"$sources_dir/pcre2/configure" --host=wasm64-unknown-emscripten --prefix="$sysroot" \
+export LDFLAGS="${abi_link_flags:+$abi_link_flags }-sWASM_BIGINT -pthread -L$sysroot/lib"
+"$sources_dir/pcre2/configure" --host="$libffi_host" --prefix="$sysroot" \
   --enable-static --disable-shared --disable-dependency-tracking --disable-jit --enable-pcre2-8 --disable-pcre2-16 --disable-pcre2-32 \
   --disable-pcre2grep-libz --disable-pcre2test-libedit --disable-pcre2test-libreadline
 # The optional POSIX wrapper races libtool's static archive descriptor on the
@@ -293,7 +316,7 @@ popd >/dev/null
 download_and_extract "glib-$glib_version.tar.xz" \
   "https://download.gnome.org/sources/glib/2.84/glib-$glib_version.tar.xz" "$sources_dir/glib"
 "$meson_bin" setup "$builds_dir/glib" "$sources_dir/glib" --prefix="$sysroot" \
-  --native-file="$work_dir/host-tools.native" --cross-file="$work_dir/emscripten-wasm64.cross" --default-library=static --buildtype=release \
+  --native-file="$work_dir/host-tools.native" --cross-file="$work_dir/emscripten-$wasm_variant.cross" --default-library=static --buildtype=release \
   -Dselinux=disabled -Dxattr=false -Dlibmount=disabled -Dnls=disabled -Dsysprof=disabled -Dintrospection=disabled \
   -Dtests=false -Dglib_debug=disabled -Dglib_assert=false -Dglib_checks=false
 sed -i -E '/#define HAVE_POSIX_SPAWN 1/d' "$builds_dir/glib/config.h"

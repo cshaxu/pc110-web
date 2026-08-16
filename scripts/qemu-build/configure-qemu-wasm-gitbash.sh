@@ -12,6 +12,14 @@ record_dir=$3
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
+wasm_variant=${PC110_WEB_WASM_VARIANT:-wasm64}
+case "$wasm_variant" in
+  wasm32|wasm64) ;;
+  *)
+    echo "unsupported WASM variant: $wasm_variant" >&2
+    exit 63
+    ;;
+esac
 
 if [[ ! -x "$qemu_source_dir/configure" ]]; then
   echo "QEMU configure script was not found at $qemu_source_dir/configure" >&2
@@ -155,7 +163,7 @@ pushd "$qemu_build_dir" >/dev/null
   --python="$python_wrapper" \
   --ninja="$ninja_windows" \
   --extra-cflags=-DEMSCRIPTEN \
-  --cpu=wasm64 \
+  --cpu="$wasm_variant" \
   --enable-tcg-interpreter \
   --target-list=i386-softmmu \
   --disable-download \

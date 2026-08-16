@@ -8,6 +8,14 @@ stage=${1:?stage is required}
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project_root=$(cd "$script_dir/../.." && pwd)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
+wasm_variant=${PC110_WEB_WASM_VARIANT:-wasm64}
+case "$wasm_variant" in
+  wasm32|wasm64) ;;
+  *)
+    echo "unsupported WASM variant: $wasm_variant" >&2
+    exit 63
+    ;;
+esac
 
 if [[ "$(uname -s)" != MINGW* && "$(uname -s)" != MSYS* ]]; then
   echo "Linux/macOS bootstrap is prepared, but its QEMU dependency build has not yet been validated."
@@ -52,10 +60,11 @@ if [[ ! -f "$source_dir/subprojects/keycodemapdb/README" ]]; then
   "$script_dir/prepare-pc110-wasm-source-gitbash.sh" "$qemu_git_dir" "$source_dir" "$pc110_qemu_dir"
 fi
 if [[ ! -d "$deps_dir" ]]; then
-  "$script_dir/build-wasm-dependencies-gitbash.sh" "$deps_dir" "$sysroot"
+  PC110_WEB_WASM_VARIANT="$wasm_variant" \
+    "$script_dir/build-wasm-dependencies-gitbash.sh" "$deps_dir" "$sysroot"
 fi
 if [[ ! -d "$build_dir" ]]; then
-  PC110_WEB_WASM_DEPENDENCY_WORK_DIR="$deps_dir" PC110_WEB_WASM_SYSROOT="$sysroot" \
+  PC110_WEB_WASM_VARIANT="$wasm_variant" PC110_WEB_WASM_DEPENDENCY_WORK_DIR="$deps_dir" PC110_WEB_WASM_SYSROOT="$sysroot" \
     "$script_dir/configure-qemu-wasm-gitbash.sh" "$source_dir" "$build_dir" "$record_dir"
 fi
 if [[ ! -d "$artifact_dir" ]]; then

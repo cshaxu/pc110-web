@@ -19,6 +19,7 @@ assert(dependencies.includes("emscripten-$wasm_variant.cross"), "Dependency cros
 assert(dependencies.includes('host_venv/bin/python.exe'), "Dependency setup must support Git Bash virtual-environment layouts.");
 assert(dependencies.includes('em_cache_dir="$work_dir/em-cache"'), "Emscripten cache must remain inside the ABI-specific dependency work directory.");
 assert(dependencies.includes('export TEMP="$temp_windows"'), "The build must provide clang a writable Windows temporary directory.");
+assert(dependencies.includes('build_jobs=${PC110_WEB_BUILD_JOBS:-1}'), "Initial per-ABI Emscripten cache generation must avoid parallel cache races by default.");
 assert(configure.includes('--cpu="$wasm_variant"'), "QEMU configuration must select the explicit ABI.");
 assert(cleanVariant.includes('PC110_WEB_WASM_VARIANT="$variant"'), "Clean variant build must propagate the ABI explicitly.");
 assert(cleanVariant.includes('run-setup-build.sh" "$variant"'), "Clean variant build must use an ABI-named cache stage.");

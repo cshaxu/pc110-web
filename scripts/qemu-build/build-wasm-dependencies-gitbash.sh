@@ -60,6 +60,7 @@ tool_cache_dir="$project_root/.cache/tool-archives"
 manifest_dir="$work_dir/manifest"
 temp_dir="$work_dir/tmp"
 em_cache_dir="$work_dir/em-cache"
+build_jobs=${PC110_WEB_BUILD_JOBS:-1}
 mkdir -p "$tools_dir" "$sources_dir" "$builds_dir" "$downloads_dir" "$manifest_dir" "$temp_dir" "$em_cache_dir" "$source_cache_dir" "$tool_cache_dir" "$sysroot/lib/pkgconfig"
 temp_windows=$(cygpath -w "$temp_dir")
 export TMPDIR="$temp_dir"
@@ -238,7 +239,7 @@ pushd "$builds_dir" >/dev/null
 mkdir zlib
 pushd zlib >/dev/null
 "$sources_dir/zlib/configure" --prefix="$sysroot" --static
-"$make_bin" -j"$(nproc)"
+"$make_bin" -j"$build_jobs"
 "$make_bin" install
 popd >/dev/null
 
@@ -249,7 +250,7 @@ pushd libffi >/dev/null
 "$sources_dir/libffi/configure" --host="$libffi_host" --prefix="$sysroot" \
   --enable-static --disable-shared --disable-dependency-tracking --disable-builddir \
   --disable-multi-os-directory --disable-raw-api --disable-docs
-"$make_bin" -j"$(nproc)"
+"$make_bin" -j"$build_jobs"
 # libffi's generated man-page target is not portable to Git Bash. Install the
 # target library, headers, and pkg-config metadata explicitly instead.
 "$make_bin" install-exec-am
@@ -322,7 +323,7 @@ export LDFLAGS="${abi_link_flags:+$abi_link_flags }-sWASM_BIGINT -pthread -L$sys
 # The optional POSIX wrapper races libtool's static archive descriptor on the
 # Git-Bash/MSYS boundary. GLib requires only PCRE2's 8-bit static library, so
 # build that target directly instead of the aggregate program/wrapper target.
-"$make_bin" -j"$(nproc)" libpcre2-8.la
+"$make_bin" -j"$build_jobs" libpcre2-8.la
 # libtool on this Git-Bash/MSYS boundary installs only the .la descriptor for
 # a static-only PCRE2 build and then fails on the optional POSIX wrapper. GLib
 # requires the 8-bit static archive, headers, and pkg-config metadata only.

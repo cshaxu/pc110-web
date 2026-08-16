@@ -1,6 +1,6 @@
 # Current Status
 
-**Status: Verified — M3 T5 S1 P2 wasm64 Incremental Artifact Build closed.**
+**Status: Active — M3 T5 S2 P1 wasm32 Safari 26 Compatibility Path.**
 The independent Windows-native clean build remains the verified baseline. M3
 T5 now defines and implements variant-isolated incremental rebuilds for wasm32
 and wasm64 without changing PC110 runtime behavior or personal-media scope.

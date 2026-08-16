@@ -22,5 +22,4 @@ assert(
   !patch.includes("web_display_last_x") && !patch.includes("web_display_last_y"),
   "The web display patch must not derive locked pointer motion from target coordinates."
 );
-
 console.log("web-display-pointer-input=ok");

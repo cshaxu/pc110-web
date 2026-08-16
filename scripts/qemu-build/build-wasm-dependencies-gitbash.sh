@@ -66,7 +66,7 @@ temp_windows=$(cygpath -w "$temp_dir")
 export TMPDIR="$temp_dir"
 export TEMP="$temp_windows"
 export TMP="$temp_windows"
-export EM_CACHE="$em_cache_dir"
+export EM_CACHE="$(cygpath -w "$em_cache_dir")"
 
 # QEMU detects SDL through pkg-config. Emscripten supplies SDL2 as a link-time
 # port rather than a sysroot package, so publish the narrow descriptor that

@@ -61,6 +61,7 @@ chmod +x "$shim_dir/python3"
 
 export PATH="$shim_dir:$PATH"
 source "$emsdk_dir/emsdk_env.sh" >/dev/null
+export EM_CONFIG="$(cygpath -w "$emsdk_dir/.emscripten")"
 export EMMAKEN_JUST_CONFIGURE=1
 
 command -v emcc >/dev/null

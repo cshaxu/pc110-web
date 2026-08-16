@@ -1,0 +1,4 @@
+public/emulator/*.js text eol=lf
+public/emulator/SHA256SUMS text eol=lf
+public/emulator/*.wasm binary
+public/emulator/pc-bios/* binary

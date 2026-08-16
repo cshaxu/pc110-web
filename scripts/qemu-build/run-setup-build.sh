@@ -39,8 +39,8 @@ if [[ ! -d "$qemu_git_dir/.git" ]]; then
   git clone --depth 1 --branch v11.0.2 https://gitlab.com/qemu-project/qemu.git "$qemu_git_dir"
 fi
 if [[ ! -f "$qemu_git_dir/subprojects/keycodemapdb/README" ]]; then
-  git clone https://gitlab.com/qemu-project/keycodemapdb.git "$qemu_git_dir/subprojects/keycodemapdb"
-  git -C "$qemu_git_dir/subprojects/keycodemapdb" checkout --detach f5772a62ec52591ff6870b7e8ef32482371f22c6
+  git clone --quiet https://gitlab.com/qemu-project/keycodemapdb.git "$qemu_git_dir/subprojects/keycodemapdb"
+  git -C "$qemu_git_dir/subprojects/keycodemapdb" checkout --quiet --detach f5772a62ec52591ff6870b7e8ef32482371f22c6
 fi
 pc110_qemu_dir="${PC110_WEB_PC110_QEMU_DIR:-$cache_dir/pc110-qemu-src}"
 pc110_qemu_revision=$(sed -n 's/.*"revision": "\([^"]*\)".*/\1/p' "$project_root/pc110-qemu.lock.json")
@@ -54,8 +54,8 @@ if [[ ! -d "$pc110_qemu_dir/.git" ]]; then
 fi
 if [[ ! -f "$source_dir/subprojects/keycodemapdb/README" ]]; then
   if [[ -e "$source_dir" ]]; then
-    echo "PC110 WASM source is incomplete; choose a new PC110_WEB_BUILD_STAGE before retrying" >&2
-    exit 80
+    echo "removing incomplete PC110 WASM source for $stage before retrying" >&2
+    rm -rf "$source_dir"
   fi
   "$script_dir/prepare-pc110-wasm-source-gitbash.sh" "$qemu_git_dir" "$source_dir" "$pc110_qemu_dir"
 fi

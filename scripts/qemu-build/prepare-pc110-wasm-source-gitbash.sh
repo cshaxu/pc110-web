@@ -31,8 +31,8 @@ qemu_git_source_dir=$(cd "$qemu_git_source_dir" && pwd -P)
 wasm_source_parent=$(cd "$(dirname "$wasm_source_dir")" && pwd -P)
 wasm_source_dir="$wasm_source_parent/$(basename "$wasm_source_dir")"
 
-git clone --no-hardlinks "$qemu_git_source_dir" "$wasm_source_dir"
-git -C "$wasm_source_dir" checkout --detach "$(git -C "$qemu_git_source_dir" rev-parse HEAD)"
+git clone --quiet --no-hardlinks "$qemu_git_source_dir" "$wasm_source_dir"
+git -C "$wasm_source_dir" checkout --quiet --detach "$(git -C "$qemu_git_source_dir" rev-parse HEAD)"
 
 mkdir -p "$wasm_source_dir/subprojects"
 cp -a "$qemu_git_source_dir/subprojects/keycodemapdb" "$wasm_source_dir/subprojects/keycodemapdb"

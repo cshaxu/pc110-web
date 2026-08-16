@@ -93,7 +93,13 @@ if [[ ! -x "$ninja_bin" ]]; then
     cp "$ninja_archive" "$tool_cache_dir/ninja-win.zip"
   fi
   sha256sum "$ninja_archive" >> "$manifest_dir/SHA256SUMS"
-  unzip -q "$ninja_archive" -d "$tools_dir"
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$ninja_archive" -d "$tools_dir"
+  else
+    archive_windows=$(cygpath -w "$ninja_archive")
+    tools_windows=$(cygpath -w "$tools_dir")
+    powershell.exe -NoProfile -Command "Expand-Archive -LiteralPath '$archive_windows' -DestinationPath '$tools_windows' -Force"
+  fi
 fi
 
 if [[ ! -x "$ninja_bin" ]]; then

@@ -20,8 +20,8 @@ for (const path of [
   assert(script.includes(path), `Incremental build must use an isolated variant path: ${path}.`);
 }
 
-assert(script.includes("wasm64) ;;"), "wasm64 must be the admitted incremental variant.");
-assert(script.includes("wasm32 incremental builds are deferred"), "wasm32 must fail closed before independent verification.");
+assert(script.includes("wasm32|wasm64) ;;"), "Both ABI variants must admit incremental QEMU builds.");
+assert(script.includes('PC110_WEB_WASM_VARIANT="$variant"'), "The selected ABI must propagate into incremental linking.");
 assert(script.includes("build-configured-qemu-wasm-gitbash.sh"), "Incremental build must reuse the configured Ninja graph.");
 assert(!script.includes("build-wasm-dependencies-gitbash.sh"), "Incremental build must not rebuild dependencies.");
 assert(!script.includes("prepare-pc110-wasm-source-gitbash.sh"), "Incremental build must not recreate prepared source.");

@@ -13,11 +13,7 @@ project_root=$(cd "$script_dir/../.." && pwd -P)
 cache_dir=${PC110_WEB_CACHE_DIR:-"$project_root/.cache"}
 
 case "$variant" in
-  wasm64) ;;
-  wasm32)
-    echo "wasm32 incremental builds are deferred until its independent clean configuration is verified" >&2
-    exit 78
-    ;;
+  wasm32|wasm64) ;;
   *)
     echo "unsupported WASM variant: $variant" >&2
     exit 65
@@ -66,5 +62,5 @@ printf 'variant=%s\nsource=%s\nbuild=%s\nsysroot=%s\nartifact=%s\n' \
   "$variant" "$source_dir" "$build_dir" "$sysroot_dir" "$artifact_dir" \
   > "$record_dir/incremental-artifact-command.txt"
 
-PC110_WEB_WASM_DEPENDENCY_WORK_DIR="$deps_dir" \
+PC110_WEB_WASM_VARIANT="$variant" PC110_WEB_WASM_DEPENDENCY_WORK_DIR="$deps_dir" \
   "$script_dir/build-configured-qemu-wasm-gitbash.sh" "$build_dir" "$artifact_dir"

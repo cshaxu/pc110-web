@@ -42,13 +42,11 @@ qemu_patches=(
   "$project_root/qemu/patches/0004-emscripten-propagate-compile-define.patch"
   "$project_root/qemu/patches/0005-emscripten-web-display.patch"
   "$project_root/qemu/patches/0006-emscripten-pump-event-proxies.patch"
-  "$project_root/qemu/patches/0007-emscripten-allow-wasm32-system-emulator.patch"
-  "$project_root/qemu/patches/0008-emscripten-wasm32-avoid-mismatched-glib-length.patch"
 )
 for qemu_patch in "${qemu_patches[@]}"; do
-  if git -C "$qemu_source_dir" apply --check "$qemu_patch" >/dev/null 2>&1; then
+  if git -C "$qemu_source_dir" apply --check "$qemu_patch"; then
     git -C "$qemu_source_dir" apply "$qemu_patch"
-  elif ! git -C "$qemu_source_dir" apply --reverse --check "$qemu_patch" >/dev/null 2>&1; then
+  elif ! git -C "$qemu_source_dir" apply --reverse --check "$qemu_patch"; then
     echo "a required Emscripten QEMU patch cannot be applied to this source revision" >&2
     exit 67
   fi
@@ -73,18 +71,6 @@ if [[ -z "$wasm_sysroot" || -z "$dependency_work_dir" ]]; then
   echo "PC110_WEB_WASM_SYSROOT and PC110_WEB_WASM_DEPENDENCY_WORK_DIR are required" >&2
   exit 68
 fi
-
-# Keep QEMU's configure probes inside the ABI-local Emscripten scratch and
-# system-library cache. This prevents wasm32 probes from racing or contaminating
-# the wasm64 toolchain state on Windows hosts.
-dependency_work_dir=$(cd "$dependency_work_dir" && pwd -P)
-configure_tmp_dir="$dependency_work_dir/tmp"
-configure_em_cache="$dependency_work_dir/em-cache"
-mkdir -p "$configure_tmp_dir" "$configure_em_cache"
-export TMPDIR="$configure_tmp_dir"
-export TEMP="$(cygpath -w "$configure_tmp_dir")"
-export TMP="$TEMP"
-export EM_CACHE="$(cygpath -w "$configure_em_cache")"
 
 pkgconfig_cmd="$dependency_work_dir/tools/pkg-config.cmd"
 ninja_bin="$dependency_work_dir/tools/ninja.exe"
@@ -116,27 +102,17 @@ if ! command -v "$host_cc" >/dev/null 2>&1; then
 fi
 
 bootstrap_wheels_dir=${PC110_WEB_QEMU_BOOTSTRAP_WHEELS:-"$dependency_work_dir/qemu-bootstrap-wheels"}
-bootstrap_wheel_cache="$project_root/.cache/python-wheels"
 setuptools_wheel="setuptools-84.0.0-py3-none-any.whl"
 wheel_wheel="wheel-0.48.0-py3-none-any.whl"
 packaging_wheel="packaging-26.3-py3-none-any.whl"
 mkdir -p "$bootstrap_wheels_dir"
-if [[ ! -f "$bootstrap_wheels_dir/$setuptools_wheel" && -f "$bootstrap_wheel_cache/$setuptools_wheel" ]]; then
-  cp "$bootstrap_wheel_cache/$setuptools_wheel" "$bootstrap_wheels_dir/$setuptools_wheel"
-fi
 if [[ ! -f "$bootstrap_wheels_dir/$setuptools_wheel" ]]; then
   curl --fail --location --retry 3 --output "$bootstrap_wheels_dir/$setuptools_wheel" \
     "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/$setuptools_wheel"
 fi
-if [[ ! -f "$bootstrap_wheels_dir/$wheel_wheel" && -f "$bootstrap_wheel_cache/$wheel_wheel" ]]; then
-  cp "$bootstrap_wheel_cache/$wheel_wheel" "$bootstrap_wheels_dir/$wheel_wheel"
-fi
 if [[ ! -f "$bootstrap_wheels_dir/$wheel_wheel" ]]; then
   curl --fail --location --retry 3 --output "$bootstrap_wheels_dir/$wheel_wheel" \
     "https://files.pythonhosted.org/packages/2e/29/69cfbb602cd91690c55d38ba9fe53e6a7e76a6fa647bf38f19c138d25449/$wheel_wheel"
-fi
-if [[ ! -f "$bootstrap_wheels_dir/$packaging_wheel" && -f "$bootstrap_wheel_cache/$packaging_wheel" ]]; then
-  cp "$bootstrap_wheel_cache/$packaging_wheel" "$bootstrap_wheels_dir/$packaging_wheel"
 fi
 if [[ ! -f "$bootstrap_wheels_dir/$packaging_wheel" ]]; then
   curl --fail --location --retry 3 --output "$bootstrap_wheels_dir/$packaging_wheel" \

@@ -6,8 +6,6 @@ const testDirectory = fileURLToPath(new URL(".", import.meta.url));
 const scriptsDirectory = resolve(testDirectory, "../../scripts/qemu-build");
 const dependencies = readFileSync(resolve(scriptsDirectory, "build-wasm-dependencies-gitbash.sh"), "utf8");
 const configure = readFileSync(resolve(scriptsDirectory, "configure-qemu-wasm-gitbash.sh"), "utf8");
-const configuredBuild = readFileSync(resolve(scriptsDirectory, "build-configured-qemu-wasm-gitbash.sh"), "utf8");
-const incrementalBuild = readFileSync(resolve(scriptsDirectory, "incremental-qemu-wasm-gitbash.sh"), "utf8");
 const cleanVariant = readFileSync(resolve(scriptsDirectory, "clean-qemu-wasm-variant-gitbash.sh"), "utf8");
 const setupBuild = readFileSync(resolve(scriptsDirectory, "run-setup-build.sh"), "utf8");
 
@@ -22,14 +20,7 @@ assert(dependencies.includes('host_venv/bin/python.exe'), "Dependency setup must
 assert(dependencies.includes('em_cache_dir="$work_dir/em-cache"'), "Emscripten cache must remain inside the ABI-specific dependency work directory.");
 assert(dependencies.includes('export TEMP="$temp_windows"'), "The build must provide clang a writable Windows temporary directory.");
 assert(dependencies.includes('build_jobs=${PC110_WEB_BUILD_JOBS:-1}'), "Initial per-ABI Emscripten cache generation must avoid parallel cache races by default.");
-assert(dependencies.includes('if [[ "$wasm_variant" == wasm32 ]]'), "wasm32 must select its native libffi build path.");
-assert(dependencies.includes('src/wasm/ffi.c'), "The wasm32 libffi build must compile libffi's Emscripten backend.");
-assert(dependencies.includes('emar rcs "$sysroot/lib/libffi.a"'), "The wasm32 libffi build must install an ABI-local static archive.");
 assert(configure.includes('--cpu="$wasm_variant"'), "QEMU configuration must select the explicit ABI.");
-assert(configure.includes("0007-emscripten-allow-wasm32-system-emulator.patch"), "wasm32 must explicitly opt into the reviewed QEMU system-emulator guard exception.");
-assert(configure.includes("0008-emscripten-wasm32-avoid-mismatched-glib-length.patch"), "wasm32 must carry the reviewed GLib length-pointer compatibility patch.");
-assert(configuredBuild.includes('export EM_CACHE="$(cygpath -w "$build_em_cache")"'), "Final linking must keep Emscripten system-library cache ABI-local.");
-assert(incrementalBuild.includes('PC110_WEB_WASM_DEPENDENCY_WORK_DIR:-'), "Incremental builds must permit an explicitly isolated dependency cache.");
 assert(cleanVariant.includes('PC110_WEB_WASM_VARIANT="$variant"'), "Clean variant build must propagate the ABI explicitly.");
 assert(cleanVariant.includes('run-setup-build.sh" "$variant"'), "Clean variant build must use an ABI-named cache stage.");
 assert(setupBuild.includes("removing incomplete PC110 WASM source"), "A failed source copy must be retryable inside the same variant cache.");

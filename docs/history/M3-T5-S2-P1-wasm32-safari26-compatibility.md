@@ -1,6 +1,6 @@
 # M3 T5 S2 P1: wasm32 Safari 26 Compatibility Path
 
-**State:** Active
+**State:** Closed — rejected at runtime
 **Owner:** Web technical lead
 **Depends on:** M3 T5 S1 P1, M3 T5 S1 P2
 
@@ -46,6 +46,20 @@ The promoted public artifact passed `sha256sum -c SHA256SUMS`; Emscripten's
 bundled Node 24.19.0 imported its ES module and confirmed the default module
 factory export.
 
-## Remaining Acceptance Evidence
+## Runtime Failure Record
 
-- Boot the deployed runtime in Safari 26.0 and exercise display and input.
+The generated wasm32 module imported successfully and produced the first PC110
+display frame, but both local and deployed browser sessions failed during the
+real boot path with `RuntimeError: memory access out of bounds`. Rebuilding
+with memory growth enabled did not change that result.
+
+This is not a Safari-version detection failure. QEMU 11's system emulator
+requires a 64-bit host address model, while wasm32 provides 32-bit pointers.
+The temporary Emscripten exception to QEMU's upstream host-width guard allowed
+the artifact to compile but did not make the system-emulator execution model
+valid. The wasm32 artifact, selector route, and guard-bypass patches were
+withdrawn. Production remains on the proven wasm64 runtime.
+
+Any future Safari compatibility work must establish a Safari-capable wasm64
+route or fund a separately reviewed 32-bit-host QEMU port; it must not restore
+this bypass merely because the module imports or draws a first frame.

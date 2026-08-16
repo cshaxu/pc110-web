@@ -29,7 +29,7 @@ let launchAttempt = 0;
 
 function formatFile(input: HTMLInputElement): string {
   const file = input.files?.[0];
-  return file ? `${file.name} (${Math.ceil(file.size / 1024)} KiB)` : "Default: Personaware-realbios.img";
+  return file ? `${file.name} (${Math.ceil(file.size / 1024)} KiB)` : "Using default disk: Personaware-realbios.img";
 }
 
 function updateControls(): void {
@@ -220,5 +220,5 @@ document.addEventListener("keydown", event => {
     report("Keyboard and pointer capture released.");
   }
 });
-report("Default PC110 firmware and Personaware-realbios.img are ready. Select a disk image to override it.");
+report("Default PC110 firmware and Personaware-realbios.img are ready. A disk image is optional and only overrides the default.");
 updateControls();

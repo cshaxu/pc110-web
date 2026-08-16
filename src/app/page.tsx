@@ -20,7 +20,8 @@ export default function HomePage() {
           <button id="start" type="button" title="Play or resume" aria-label="Play or resume">▶️</button>
           <button id="pause" type="button" title="Pause (not yet available)" aria-label="Pause" disabled>⏸️</button>
           <button id="restart" type="button" title="Reset" aria-label="Reset" disabled>🔄</button>
-          <span id="disk-state" className="file-state">Default: Personaware-realbios.img</span>
+          <span id="disk-state" className="file-state">Using default disk: Personaware-realbios.img</span>
+          <label className="file-button" title="Choose a disk image to override the default"><span aria-hidden="true">📂</span><input id="disk" type="file" /><span className="sr-only">Choose disk image override</span></label>
         </section>
       </header>
       {loadError ? <p id="load-error" role="alert">Player initialization failed: {loadError}</p> : null}

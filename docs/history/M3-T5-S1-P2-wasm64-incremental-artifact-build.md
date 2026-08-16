@@ -1,7 +1,7 @@
 # M3 T5 S1 P2: wasm64 Incremental Artifact Build
 
-**State:** Verified  
-**Owner:** Web technical lead  
+**State:** Verified
+**Owner:** Web technical lead
 **Depends on:** M3 T5 S1 P1
 
 ## Objective
